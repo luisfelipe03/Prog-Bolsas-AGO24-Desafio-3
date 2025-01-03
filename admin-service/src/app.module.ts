@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { env } from './shared/env';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { env } from './shared/env';
       entities: [],
       synchronize: true,
     }),
+    CategoriesModule,
   ],
 })
 export class AppModule {}
