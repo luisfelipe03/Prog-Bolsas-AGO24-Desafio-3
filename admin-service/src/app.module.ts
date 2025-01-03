@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { env } from './shared/env';
 import { CategoriesModule } from './categories/categories.module';
+import { ProductsModule } from './products/products.module';
+import { Category } from './categories/entities/category.entity';
+import { Product } from './products/entities/product.entity';
 
 @Module({
   imports: [
@@ -15,10 +18,11 @@ import { CategoriesModule } from './categories/categories.module';
       ssl: {
         rejectUnauthorized: false,
       },
-      entities: [],
+      entities: [Category, Product],
       synchronize: true,
     }),
     CategoriesModule,
+    ProductsModule,
   ],
 })
 export class AppModule {}
