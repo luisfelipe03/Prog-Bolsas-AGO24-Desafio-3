@@ -1,0 +1,44 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    ports:
+      - "15672:15672"  
+      - "5672:5672"    
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+
+  postgres:
+    image: postgres:13
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloak     
+      POSTGRES_USER: postgres   
+      POSTGRES_PASSWORD: keycloak#1234  
+    ports:
+      - "5432:5432"  
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:21.1.1
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin            
+      KEYCLOAK_ADMIN_PASSWORD: admin   
+      DB_VENDOR: postgres              
+      DB_ADDR: postgres                
+      DB_PORT: 5432                    
+      DB_DATABASE: keycloak            
+      DB_USER: keycloak                
+      DB_PASSWORD: keycloak#1234   
+    ports:
+      - "8080:8080"  
+    command:
+      - start-dev
+    depends_on:
+      - postgres  
+
+volumes:
+  postgres_data:  
