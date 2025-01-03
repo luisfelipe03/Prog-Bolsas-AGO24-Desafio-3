@@ -1,0 +1,166 @@
+import { ConflictException, Injectable } from '@nestjs/common';
+import { CreateDistributorDto } from './dto/create-distributor.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Distributor } from './entities/distributor.entity';
+import { QueryFailedError, Repository } from 'typeorm';
+import { GetCoordinatesByAddress } from 'src/shared/external/googleGeoconding';
+import { Address } from './entities/address.entity';
+import { NoDistributorsFoundException } from './errors/noDistributorsFoundException';
+import { DistributorNotFoundException } from './errors/distributorNotFoundException';
+import * as bcrypt from 'bcrypt';
+import { OutputDistributorDto } from './dto/output-distributor.dto';
+
+@Injectable()
+export class DistributorsService {
+  constructor(
+    @InjectRepository(Distributor)
+    private distributorRepo: Repository<Distributor>,
+    @InjectRepository(Address)
+    private addressRepo: Repository<Address>,
+  ) {}
+
+  async create(createDistributorDto: CreateDistributorDto) {
+    const { name, phone, email, password, cnpj, type, address } =
+      createDistributorDto;
+
+    const queryRunner =
+      this.distributorRepo.manager.connection.createQueryRunner();
+    await queryRunner.startTransaction();
+
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const addressWithCoordinates =
+        await GetCoordinatesByAddress.execute(address);
+
+      if (
+        !addressWithCoordinates.latitude ||
+        !addressWithCoordinates.longitude
+      ) {
+        throw new ConflictException('Endereço não encontrado ou inválido.');
+      }
+
+      const newAddress = this.addressRepo.create({
+        street: addressWithCoordinates.street,
+        number: addressWithCoordinates.number,
+        neighborhood: addressWithCoordinates.neighborhood,
+        city: addressWithCoordinates.city,
+        state: addressWithCoordinates.state,
+        zip: addressWithCoordinates.zip,
+        latitude: addressWithCoordinates.latitude,
+        longitude: addressWithCoordinates.longitude,
+      });
+
+      const addressExists = await queryRunner.manager.findOne(Address, {
+        where: {
+          street: newAddress.street,
+          number: newAddress.number,
+          neighborhood: newAddress.neighborhood,
+          city: newAddress.city,
+          state: newAddress.state,
+          zip: newAddress.zip,
+        },
+      });
+
+      if (addressExists) {
+        throw new ConflictException('Endereço já cadastrado.');
+      }
+
+      const savedAddress = await queryRunner.manager.save(newAddress);
+
+      const distributor = this.distributorRepo.create({
+        name,
+        phone,
+        email,
+        password: hashedPassword,
+        cnpj,
+        type,
+        address: savedAddress,
+      });
+
+      const savedDistributor = await queryRunner.manager.save(distributor);
+
+      await queryRunner.commitTransaction();
+
+      return savedDistributor;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+
+      if (
+        error instanceof QueryFailedError &&
+        error.message.includes('duplicate key value violates unique constraint')
+      ) {
+        throw new ConflictException(
+          'Já existe um distribuidor com o mesmo CNPJ, telefone ou e-mail.',
+        );
+      }
+
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async findAll() {
+    const distributors = await this.distributorRepo.find({
+      relations: ['address'],
+    });
+
+    if (distributors.length === 0) {
+      throw new NoDistributorsFoundException();
+    }
+
+    return OutputDistributorDto.fromEntities(distributors);
+  }
+
+  async findOne(id: string) {
+    const distributor = await this.distributorRepo.findOne({
+      where: { id },
+      relations: ['address'],
+    });
+    if (!distributor) {
+      throw new DistributorNotFoundException();
+    }
+
+    return distributor;
+  }
+
+  async findByCnpj(cnpj: string) {
+    const distributor = await this.distributorRepo.findOne({
+      where: { cnpj },
+      relations: ['address'],
+    });
+    if (!distributor) {
+      throw new DistributorNotFoundException();
+    }
+
+    return OutputDistributorDto.fromEntity(distributor);
+  }
+
+  async findDistibutorsByType(type: 'store' | 'pdv') {
+    const distributors = await this.distributorRepo.find({
+      where: { type },
+      relations: ['address'],
+    });
+
+    if (distributors.length === 0) {
+      throw new NoDistributorsFoundException();
+    }
+
+    return OutputDistributorDto.fromEntities(distributors);
+  }
+
+  async findDistributorsByState(state: string) {
+    const distributors = await this.distributorRepo
+      .createQueryBuilder('distributor')
+      .leftJoinAndSelect('distributor.address', 'address')
+      .where('address.state = :state', { state })
+      .getMany();
+
+    if (distributors.length === 0) {
+      throw new NoDistributorsFoundException();
+    }
+
+    return OutputDistributorDto.fromEntities(distributors);
+  }
+}

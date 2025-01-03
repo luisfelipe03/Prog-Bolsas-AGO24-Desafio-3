@@ -5,6 +5,9 @@ import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { Category } from './categories/entities/category.entity';
 import { Product } from './products/entities/product.entity';
+import { Distributor } from './distributors/entities/distributor.entity';
+import { Address } from './distributors/entities/address.entity';
+import { DistributorsModule } from './distributors/distributors.module';
 
 @Module({
   imports: [
@@ -18,11 +21,12 @@ import { Product } from './products/entities/product.entity';
       ssl: {
         rejectUnauthorized: false,
       },
-      entities: [Category, Product],
+      entities: [Category, Product, Distributor, Address],
       synchronize: true,
     }),
     CategoriesModule,
     ProductsModule,
+    DistributorsModule,
   ],
 })
 export class AppModule {}
