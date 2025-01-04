@@ -9,6 +9,7 @@ import { NoDistributorsFoundException } from './errors/noDistributorsFoundExcept
 import { DistributorNotFoundException } from './errors/distributorNotFoundException';
 import * as bcrypt from 'bcrypt';
 import { OutputDistributorDto } from './dto/output-distributor.dto';
+import { UpdateDistributorDto } from './dto/update-distributor.dto';
 
 @Injectable()
 export class DistributorsService {
@@ -163,4 +164,20 @@ export class DistributorsService {
 
     return OutputDistributorDto.fromEntities(distributors);
   }
+
+  async findDistributorsByCity(city: string) {
+    const distributors = await this.distributorRepo
+      .createQueryBuilder('distributor')
+      .leftJoinAndSelect('distributor.address', 'address')
+      .where('address.city ILIKE :city', { city: `%${city}%` }) // Uso do operador LIKE
+      .getMany();
+
+    if (distributors.length === 0) {
+      throw new NoDistributorsFoundException();
+    }
+
+    return OutputDistributorDto.fromEntities(distributors);
+  }
+
+  async update(id: string, updateDistributorDto: UpdateDistributorDto) {}
 }

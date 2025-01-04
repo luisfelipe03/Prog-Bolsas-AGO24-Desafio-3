@@ -42,4 +42,9 @@ export class DistributorsController {
       state.toUpperCase(),
     );
   }
+
+  @Get('/city/:city')
+  findByCity(@Param('city') city: string) {
+    return this.distributorsService.findDistributorsByCity(city);
+  }
 }
