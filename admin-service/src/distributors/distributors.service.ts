@@ -180,4 +180,40 @@ export class DistributorsService {
   }
 
   async update(id: string, updateDistributorDto: UpdateDistributorDto) {}
+
+  async desactivate(id: string) {
+    const distributor = await this.distributorRepo.findOneBy({ id });
+
+    if (!distributor) {
+      throw new DistributorNotFoundException();
+    }
+
+    if (!distributor.is_active) {
+      throw new ConflictException('Distribuidor já está desativado.');
+    }
+
+    distributor.is_active = false;
+
+    await this.distributorRepo.save(distributor);
+
+    return distributor;
+  }
+
+  async activate(id: string) {
+    const distributor = await this.distributorRepo.findOneBy({ id });
+
+    if (!distributor) {
+      throw new DistributorNotFoundException();
+    }
+
+    if (distributor.is_active) {
+      throw new ConflictException('Distribuidor já está ativo.');
+    }
+
+    distributor.is_active = true;
+
+    await this.distributorRepo.save(distributor);
+
+    return distributor;
+  }
 }

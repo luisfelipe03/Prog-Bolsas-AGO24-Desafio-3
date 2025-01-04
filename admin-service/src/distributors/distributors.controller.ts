@@ -47,4 +47,14 @@ export class DistributorsController {
   findByCity(@Param('city') city: string) {
     return this.distributorsService.findDistributorsByCity(city);
   }
+
+  @Get('/desactive/:id')
+  desactive(@Param('id') id: string) {
+    return this.distributorsService.desactivate(id);
+  }
+
+  @Get('/activate/:id')
+  activate(@Param('id') id: string) {
+    return this.distributorsService.activate(id);
+  }
 }
