@@ -14,6 +14,7 @@ import { NoProductsNotFoundException } from './errors/noProductNotFoundException
 import { ProductNotFoundException } from './errors/productNotFoundException';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { env } from 'src/shared/env';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 
 @Injectable()
 export class ProductsService {
@@ -24,6 +25,7 @@ export class ProductsService {
   constructor(
     @InjectRepository(Product) private productRepo: Repository<Product>,
     @Inject() private readonly categoryService: CategoriesService,
+    private amqpConnection: AmqpConnection,
   ) {}
 
   async create(createProductDto: CreateProductDto) {
@@ -63,6 +65,8 @@ export class ProductsService {
         image_url,
         category,
       });
+
+      await this.amqpConnection.publish('products', 'product.created', product);
 
       return await this.productRepo.save(product);
     } catch (error) {
@@ -171,6 +175,8 @@ export class ProductsService {
       product.image_url = `https://${env.AWS_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/products/${fileName}`;
     }
 
+    await this.amqpConnection.publish('products', 'product.updated', product);
+
     return this.productRepo.save(product);
   }
 
@@ -202,6 +208,8 @@ export class ProductsService {
         throw new FileUploadException('Error deleting image from S3');
       }
     }
+
+    await this.amqpConnection.publish('products', 'product.deleted', product);
 
     return this.productRepo.remove(product);
   }

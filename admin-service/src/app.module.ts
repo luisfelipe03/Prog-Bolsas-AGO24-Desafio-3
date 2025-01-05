@@ -8,6 +8,7 @@ import { Product } from './products/entities/product.entity';
 import { Distributor } from './distributors/entities/distributor.entity';
 import { Address } from './distributors/entities/address.entity';
 import { DistributorsModule } from './distributors/distributors.module';
+import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { DistributorsModule } from './distributors/distributors.module';
     CategoriesModule,
     ProductsModule,
     DistributorsModule,
+    RabbitmqModule,
   ],
 })
 export class AppModule {}

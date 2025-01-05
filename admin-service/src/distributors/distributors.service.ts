@@ -10,6 +10,7 @@ import { DistributorNotFoundException } from './errors/distributorNotFoundExcept
 import * as bcrypt from 'bcrypt';
 import { OutputDistributorDto } from './dto/output-distributor.dto';
 import { UpdateDistributorDto } from './dto/update-distributor.dto';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 
 @Injectable()
 export class DistributorsService {
@@ -18,6 +19,7 @@ export class DistributorsService {
     private distributorRepo: Repository<Distributor>,
     @InjectRepository(Address)
     private addressRepo: Repository<Address>,
+    private amqpConnection: AmqpConnection,
   ) {}
 
   async create(createDistributorDto: CreateDistributorDto) {
@@ -82,6 +84,12 @@ export class DistributorsService {
       const savedDistributor = await queryRunner.manager.save(distributor);
 
       await queryRunner.commitTransaction();
+
+      await this.amqpConnection.publish(
+        'stores',
+        'store.created',
+        savedDistributor,
+      );
 
       return savedDistributor;
     } catch (error) {
@@ -197,7 +205,10 @@ export class DistributorsService {
       });
 
       await this.distributorRepo.save(distributor);
-      return OutputDistributorDto.fromEntity(distributor);
+
+      await this.amqpConnection.publish('stores', 'store.updated', distributor);
+
+      return distributor;
     } catch (error) {
       if (
         error instanceof QueryFailedError &&

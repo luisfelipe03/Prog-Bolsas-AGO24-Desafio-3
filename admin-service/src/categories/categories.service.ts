@@ -13,6 +13,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoryNotFoundException } from './errors/categoryNotFoundException';
 import { NoCategoriesFoundException } from './errors/noCategoriesFoundException';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 
 @Injectable()
 export class CategoriesService {
@@ -22,6 +23,7 @@ export class CategoriesService {
 
   constructor(
     @InjectRepository(Category) private categoryRepo: Repository<Category>,
+    private amqpConnection: AmqpConnection,
   ) {}
 
   async create(createCategoryDto: CreateCategoryDto) {
@@ -51,6 +53,12 @@ export class CategoriesService {
         name,
         image_url,
       });
+
+      await this.amqpConnection.publish(
+        'categories',
+        'category.created',
+        category,
+      );
 
       return this.categoryRepo.save(category);
     } catch (error) {
@@ -126,6 +134,12 @@ export class CategoriesService {
       category.image_url = `https://${env.AWS_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/category/${fileName}`;
     }
 
+    await this.amqpConnection.publish(
+      'categories',
+      'category.updated',
+      category,
+    );
+
     return this.categoryRepo.save(category);
   }
 
@@ -156,6 +170,12 @@ export class CategoriesService {
         throw new FileUploadException('Error deleting image from S3');
       }
     }
+
+    await this.amqpConnection.publish(
+      'categories',
+      'category.deleted',
+      category,
+    );
 
     return this.categoryRepo.delete(id);
   }
