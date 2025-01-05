@@ -36,9 +36,9 @@ export class Distributor {
   type: 'store' | 'pdv';
 
   @OneToOne(() => Address, {
-    nullable: false,
+    nullable: true,
     cascade: true,
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
   })
   @JoinColumn()
   address: Address;
