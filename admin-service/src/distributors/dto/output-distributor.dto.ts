@@ -16,7 +16,6 @@ export class OutputDistributorDto {
   static fromEntities(distributors: any) {
     return distributors.map((distributor: any) => {
       const { address, ...distributorData } = distributor;
-      console.log(distributorData);
       return {
         id: distributorData.id,
         name: distributorData.name,

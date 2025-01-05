@@ -18,9 +18,6 @@ import { DistributorsModule } from './distributors/distributors.module';
       username: env.DB_USER,
       password: env.DB_PASS,
       database: env.DB_NAME,
-      ssl: {
-        rejectUnauthorized: false,
-      },
       entities: [Category, Product, Distributor, Address],
       synchronize: true,
     }),

@@ -2,7 +2,7 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateDistributorDto } from './dto/create-distributor.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Distributor } from './entities/distributor.entity';
-import { QueryFailedError, Repository } from 'typeorm';
+import { Not, QueryFailedError, Repository } from 'typeorm';
 import { GetCoordinatesByAddress } from 'src/shared/external/googleGeoconding';
 import { Address } from './entities/address.entity';
 import { NoDistributorsFoundException } from './errors/noDistributorsFoundException';
@@ -179,7 +179,91 @@ export class DistributorsService {
     return OutputDistributorDto.fromEntities(distributors);
   }
 
-  async update(id: string, updateDistributorDto: UpdateDistributorDto) {}
+  async update(id: string, updateDistributorDto: UpdateDistributorDto) {
+    const distributor = await this.distributorRepo.findOne({
+      where: { id },
+      relations: ['address'],
+    });
+
+    if (!distributor) {
+      throw new DistributorNotFoundException();
+    }
+
+    const { phone, email, password, cnpj, address } = updateDistributorDto;
+    console.log('Service: ', phone, email, password, cnpj, address);
+
+    try {
+      const whereConditions: any[] = [];
+
+      if (cnpj) {
+        whereConditions.push({ cnpj, id: Not(id) });
+      }
+      if (phone) {
+        whereConditions.push({ phone, id: Not(id) });
+      }
+      if (email) {
+        whereConditions.push({ email, id: Not(id) });
+      }
+
+      const duplicateDistributor =
+        whereConditions.length > 0
+          ? await this.distributorRepo.findOne({
+              where: whereConditions,
+              relations: ['address'],
+            })
+          : null;
+
+      console.log('duplicateDistributor: ', duplicateDistributor);
+
+      if (duplicateDistributor) {
+        throw new ConflictException(
+          'Já existe um distribuidor com o mesmo CNPJ, telefone ou e-mail.',
+        );
+      }
+
+      if (address && address !== distributor.address) {
+        const addressWithCoordinates =
+          await GetCoordinatesByAddress.execute(address);
+
+        if (
+          !addressWithCoordinates.latitude ||
+          !addressWithCoordinates.longitude
+        ) {
+          throw new ConflictException('Endereço não encontrado ou inválido.');
+        }
+
+        Object.assign(updateDistributorDto.address, addressWithCoordinates);
+      }
+
+      if (password && !(await bcrypt.compare(password, distributor.password))) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        updateDistributorDto.password = hashedPassword;
+      }
+
+      Object.keys(updateDistributorDto).forEach((key) => {
+        if (
+          updateDistributorDto[key] &&
+          updateDistributorDto[key] !== distributor[key]
+        ) {
+          distributor[key] = updateDistributorDto[key];
+        }
+      });
+
+      await this.distributorRepo.save(distributor);
+      return OutputDistributorDto.fromEntity(distributor);
+    } catch (error) {
+      if (
+        error instanceof QueryFailedError &&
+        error.message.includes('duplicate key value violates unique constraint')
+      ) {
+        throw new ConflictException(
+          'Já existe um distribuidor com o mesmo CNPJ, telefone ou e-mail.',
+        );
+      }
+
+      throw error;
+    }
+  }
 
   async desactivate(id: string) {
     const distributor = await this.distributorRepo.findOneBy({ id });
