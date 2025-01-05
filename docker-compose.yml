@@ -8,6 +8,8 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
   postgres:
     image: postgres:13
@@ -54,3 +56,4 @@ services:
 volumes:
   postgres_data:
   devbeer_postgres_data:
+  rabbitmq_data:
