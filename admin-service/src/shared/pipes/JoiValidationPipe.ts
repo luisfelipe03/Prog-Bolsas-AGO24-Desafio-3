@@ -8,7 +8,6 @@ export class JoiValidationPipe implements PipeTransform {
   transform(value: any) {
     const { error } = this.schema.validate(value, { abortEarly: false });
     if (error) {
-      // Formata as mensagens de erro para serem mais claras e amigáveis
       const message = error.details
         .map((detail) => this.formatErrorMessage(detail))
         .join('; ');

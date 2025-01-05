@@ -126,59 +126,6 @@ export class DistributorsService {
     return distributor;
   }
 
-  async findByCnpj(cnpj: string) {
-    const distributor = await this.distributorRepo.findOne({
-      where: { cnpj },
-      relations: ['address'],
-    });
-    if (!distributor) {
-      throw new DistributorNotFoundException();
-    }
-
-    return OutputDistributorDto.fromEntity(distributor);
-  }
-
-  async findDistibutorsByType(type: 'store' | 'pdv') {
-    const distributors = await this.distributorRepo.find({
-      where: { type },
-      relations: ['address'],
-    });
-
-    if (distributors.length === 0) {
-      throw new NoDistributorsFoundException();
-    }
-
-    return OutputDistributorDto.fromEntities(distributors);
-  }
-
-  async findDistributorsByState(state: string) {
-    const distributors = await this.distributorRepo
-      .createQueryBuilder('distributor')
-      .leftJoinAndSelect('distributor.address', 'address')
-      .where('address.state = :state', { state })
-      .getMany();
-
-    if (distributors.length === 0) {
-      throw new NoDistributorsFoundException();
-    }
-
-    return OutputDistributorDto.fromEntities(distributors);
-  }
-
-  async findDistributorsByCity(city: string) {
-    const distributors = await this.distributorRepo
-      .createQueryBuilder('distributor')
-      .leftJoinAndSelect('distributor.address', 'address')
-      .where('address.city ILIKE :city', { city: `%${city}%` }) // Uso do operador LIKE
-      .getMany();
-
-    if (distributors.length === 0) {
-      throw new NoDistributorsFoundException();
-    }
-
-    return OutputDistributorDto.fromEntities(distributors);
-  }
-
   async update(id: string, updateDistributorDto: UpdateDistributorDto) {
     const distributor = await this.distributorRepo.findOne({
       where: { id },

@@ -23,12 +23,12 @@ export class CreateProductDto {
 
   @IsNumber()
   @IsPositive()
-  @Transform(({ value }) => parseFloat(value), { toClassOnly: true }) // Garante que seja tratado como número
+  @Transform(({ value }) => parseFloat(value), { toClassOnly: true })
   volume: number;
 
   @IsNumber()
   @IsPositive()
-  @Transform(({ value }) => parseFloat(value), { toClassOnly: true }) // Garante que seja tratado como número
+  @Transform(({ value }) => parseFloat(value), { toClassOnly: true })
   alcohol_content: number;
 
   @IsOptional()
@@ -36,7 +36,7 @@ export class CreateProductDto {
 
   @IsNumber()
   @IsPositive()
-  @Transform(({ value }) => parseFloat(value), { toClassOnly: true }) // Garante que seja tratado como número
+  @Transform(({ value }) => parseFloat(value), { toClassOnly: true })
   price: number;
 
   @IsUUID()
