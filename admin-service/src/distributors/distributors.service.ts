@@ -238,6 +238,8 @@ export class DistributorsService {
 
     await this.distributorRepo.save(distributor);
 
+    await this.amqpConnection.publish('stores', 'store.updated', distributor);
+
     return distributor;
   }
 
@@ -255,6 +257,11 @@ export class DistributorsService {
     distributor.is_active = true;
 
     await this.distributorRepo.save(distributor);
+
+    await this.amqpConnection.publish('stores', 'store.updated', {
+      storeId: distributor.id,
+      isActive: distributor.is_active,
+    });
 
     return distributor;
   }
