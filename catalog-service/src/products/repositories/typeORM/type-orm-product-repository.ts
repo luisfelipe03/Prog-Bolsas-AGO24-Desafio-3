@@ -62,4 +62,18 @@ export class TypeOrmProductRepository implements ProductRepository {
       throw new Error(`Error saving product: ${error.message}`);
     }
   }
+
+  async getProductsByCategory(categoryName: string): Promise<Product[]> {
+    try {
+      return await this.productRepo
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.category', 'category')
+        .where('LOWER(category.name) = LOWER(:categoryName)', {
+          categoryName: categoryName.toLowerCase(),
+        })
+        .getMany();
+    } catch (error) {
+      throw new Error(`Error fetching products by category: ${error.message}`);
+    }
+  }
 }

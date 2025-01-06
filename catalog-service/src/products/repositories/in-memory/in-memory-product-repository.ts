@@ -65,4 +65,14 @@ export class InMemoryProductRepository implements ProductRepository {
       throw new Error(`Error saving product: ${error.message}`);
     }
   }
+
+  async getProductsByCategory(categoryName: string): Promise<Product[]> {
+    try {
+      return this.products.filter(
+        (product) => product.category.name === categoryName,
+      );
+    } catch (error) {
+      throw new Error(`Error fetching products by category: ${error.message}`);
+    }
+  }
 }

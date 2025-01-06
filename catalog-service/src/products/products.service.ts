@@ -27,6 +27,19 @@ export class ProductsService {
     return product;
   }
 
+  async findProductsByCategory(categoryName: string) {
+    try {
+      const products =
+        await this.productRepo.getProductsByCategory(categoryName);
+      if (products.length === 0) {
+        throw new NoProductsNotFoundException();
+      }
+      return products;
+    } catch (error) {
+      throw new Error(`Error fetching products by category: ${error.message}`);
+    }
+  }
+
   @RabbitSubscribe({
     exchange: 'products',
     routingKey: 'product.created',
