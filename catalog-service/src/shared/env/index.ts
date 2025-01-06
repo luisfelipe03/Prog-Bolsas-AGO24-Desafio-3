@@ -11,6 +11,7 @@ const requiredEnvVars = [
   'DB_NAME',
   'DB_USER',
   'DB_PASS',
+  'GOOGLE_API_KEY',
 ];
 
 const filteredEnv = requiredEnvVars.reduce(
@@ -34,6 +35,7 @@ const envSchema = Joi.object({
   DB_NAME: Joi.string().required(),
   DB_USER: Joi.string().required(),
   DB_PASS: Joi.string().required(),
+  GOOGLE_API_KEY: Joi.string().required(),
 });
 
 const { error, value } = envSchema.validate(filteredEnv, {
@@ -54,4 +56,5 @@ export const env = value as {
   DB_NAME: string;
   DB_USER: string;
   DB_PASS: string;
+  GOOGLE_API_KEY: string;
 };

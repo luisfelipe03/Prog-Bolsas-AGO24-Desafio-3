@@ -6,6 +6,9 @@ import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
 import { Product } from './products/entities/product.entity';
 import { ProductsModule } from './products/products.module';
 import { CategoriesModule } from './categories/categories.module';
+import { DistributorsModule } from './distributors/distributors.module';
+import { Distributor } from './distributors/entities/distributor.entity';
+import { Address } from './distributors/entities/address.entity';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -15,13 +18,14 @@ import { CategoriesModule } from './categories/categories.module';
       username: env.DB_USER,
       password: env.DB_PASS,
       database: env.DB_NAME,
-      entities: [Category, Product],
+      entities: [Category, Product, Distributor, Address],
       synchronize: true,
       logger: 'advanced-console',
     }),
     CategoriesModule,
     ProductsModule,
     RabbitmqModule,
+    DistributorsModule,
   ],
 })
 export class AppModule {}
