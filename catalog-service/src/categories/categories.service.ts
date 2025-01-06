@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Category } from './entities/category.entity';
-import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { NoCategoriesFoundException } from './errors/noCategoriesFoundException';
 import { CategoryNotFoundException } from './errors/categoryNotFoundException';
 import { validate } from 'uuid';
@@ -8,10 +8,7 @@ import { TypeORMCategoryRepository } from './repositories/typeORM/type-orm-categ
 
 @Injectable()
 export class CategoriesService {
-  constructor(
-    private categoryRepo: TypeORMCategoryRepository,
-    private amqpConnection: AmqpConnection,
-  ) {}
+  constructor(private categoryRepo: TypeORMCategoryRepository) {}
 
   async findAll() {
     const categories = await this.categoryRepo.getCategories();

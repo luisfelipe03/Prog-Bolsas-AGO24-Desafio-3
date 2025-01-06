@@ -1,18 +1,13 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Product } from './entities/product.entity';
-import { CategoriesService } from '../categories/categories.service';
 import { NoProductsNotFoundException } from './errors/noProductNotFoundException';
 import { ProductNotFoundException } from './errors/productNotFoundException';
-import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { TypeOrmProductRepository } from './repositories/typeORM/type-orm-product-repository';
 
 @Injectable()
 export class ProductsService {
-  constructor(
-    @Inject() private readonly categoryService: CategoriesService,
-    private productRepo: TypeOrmProductRepository,
-    private amqpConnection: AmqpConnection,
-  ) {}
+  constructor(private productRepo: TypeOrmProductRepository) {}
 
   async findAll() {
     const products = await this.productRepo.getProducts();
