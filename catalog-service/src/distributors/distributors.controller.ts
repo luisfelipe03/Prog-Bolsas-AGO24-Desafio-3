@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { DistributorsService } from './distributors.service';
 
@@ -7,8 +7,13 @@ import { DistributorsService } from './distributors.service';
 export class DistributorsController {
   constructor(private readonly distributorsService: DistributorsService) {}
 
-  // @Get('/nearby/:clientCep')
-  // async findNearbyStores(@Param('clientCep') clientCep: string) {
-  //   return this.distributorsService.findNearbyDistributor(clientCep);
-  // }
+  @Get()
+  async findAll() {
+    return this.distributorsService.findAll();
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.distributorsService.findOne(id);
+  }
 }
