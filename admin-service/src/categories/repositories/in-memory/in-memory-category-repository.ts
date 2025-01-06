@@ -47,10 +47,8 @@ export class InMemoryCategoryRepository implements CategoryRepository {
     );
 
     if (existingIndex !== -1) {
-      // Atualiza a categoria existente
       this.categories[existingIndex] = category;
     } else {
-      // Adiciona uma nova categoria
       this.categories.push(category);
     }
 
