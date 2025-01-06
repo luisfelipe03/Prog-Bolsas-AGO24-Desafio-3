@@ -66,9 +66,15 @@ export class ProductsService {
         category,
       });
 
-      await this.amqpConnection.publish('products', 'product.created', product);
+      const savedProduct = await this.productRepo.save(product);
 
-      return await this.productRepo.save(product);
+      await this.amqpConnection.publish(
+        'products',
+        'product.created',
+        savedProduct,
+      );
+
+      return savedProduct;
     } catch (error) {
       console.error(error);
       if (error instanceof BadRequestException) {
