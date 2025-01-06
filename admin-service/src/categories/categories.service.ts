@@ -54,13 +54,15 @@ export class CategoriesService {
         image_url,
       });
 
+      const savedCategory = await this.categoryRepo.save(category);
+
       await this.amqpConnection.publish(
         'categories',
         'category.created',
-        category,
+        savedCategory,
       );
 
-      return this.categoryRepo.save(category);
+      return savedCategory;
     } catch (error) {
       console.error('Error uploading image to S3:', error);
       throw new FileUploadException('Error uploading image to S3');

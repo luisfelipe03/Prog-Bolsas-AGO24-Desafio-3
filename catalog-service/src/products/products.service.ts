@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { CategoriesService } from '../categories/categories.service';
 import { NoProductsNotFoundException } from './errors/noProductNotFoundException';
 import { ProductNotFoundException } from './errors/productNotFoundException';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 
 @Injectable()
 export class ProductsService {
@@ -36,5 +36,64 @@ export class ProductsService {
     }
 
     return product;
+  }
+
+  @RabbitSubscribe({
+    exchange: 'products',
+    routingKey: 'product.created',
+    queue: 'catalog-product-created',
+  })
+  async handleProductCreated(message: Product) {
+    try {
+      const product = Product.create(message);
+
+      await this.productRepo.save(product);
+    } catch (error) {
+      console.error('Erro ao processar a mensagem:', error);
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'products',
+    routingKey: 'product.updated',
+    queue: 'catalog-product-updated',
+  })
+  async handleProductUpdated(message: Product) {
+    try {
+      const product = await this.productRepo.findOne({
+        where: { id: message.id },
+      });
+
+      if (!product) {
+        throw new ProductNotFoundException();
+      }
+
+      Object.assign(product, message);
+
+      await this.productRepo.save(product);
+    } catch (error) {
+      console.error('Erro ao processar a mensagem:', error);
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'products',
+    routingKey: 'product.deleted',
+    queue: 'catalog-product-deleted',
+  })
+  async handleProductDeleted(message: { id: string }) {
+    try {
+      const product = await this.productRepo.findOne({
+        where: { id: message.id },
+      });
+
+      if (!product) {
+        throw new ProductNotFoundException();
+      }
+
+      await this.productRepo.delete(product);
+    } catch (error) {
+      console.error('Erro ao processar a mensagem:', error);
+    }
   }
 }
