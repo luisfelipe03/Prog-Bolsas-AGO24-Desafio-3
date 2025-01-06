@@ -1,21 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
-import { Repository } from 'typeorm';
 import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { NoCategoriesFoundException } from './errors/noCategoriesFoundException';
 import { CategoryNotFoundException } from './errors/categoryNotFoundException';
 import { validate } from 'uuid';
+import { TypeORMCategoryRepository } from './repositories/typeORM/type-orm-category-repository';
 
 @Injectable()
 export class CategoriesService {
   constructor(
-    @InjectRepository(Category) private categoryRepo: Repository<Category>,
+    private categoryRepo: TypeORMCategoryRepository,
     private amqpConnection: AmqpConnection,
   ) {}
 
   async findAll() {
-    const categories = await this.categoryRepo.find();
+    const categories = await this.categoryRepo.getCategories();
     if (categories.length === 0) {
       throw new NoCategoriesFoundException();
     }
@@ -23,9 +22,7 @@ export class CategoriesService {
   }
 
   async findOne(id: string) {
-    const category = await this.categoryRepo.findOne({
-      where: { id },
-    });
+    const category = await this.categoryRepo.getCategoryById(id);
 
     if (!category) {
       throw new CategoryNotFoundException();
@@ -45,10 +42,7 @@ export class CategoriesService {
         throw new Error('ID inválido recebido');
       }
 
-      const category = new Category();
-      category.id = message.id;
-      category.name = message.name;
-      category.image_url = message.image_url;
+      const category = Category.create(message);
 
       await this.categoryRepo.save(category);
     } catch (error) {
@@ -67,9 +61,7 @@ export class CategoriesService {
         throw new Error('ID inválido recebido');
       }
 
-      const category = await this.categoryRepo.findOne({
-        where: { id: message.id },
-      });
+      const category = await this.categoryRepo.getCategoryById(message.id);
 
       if (!category) {
         throw new CategoryNotFoundException();
@@ -95,15 +87,13 @@ export class CategoriesService {
         throw new Error('ID inválido recebido');
       }
 
-      const category = await this.categoryRepo.findOne({
-        where: { id: message.id },
-      });
+      const category = await this.categoryRepo.getCategoryById(message.id);
 
       if (!category) {
         throw new CategoryNotFoundException();
       }
 
-      await this.categoryRepo.remove(category);
+      await this.categoryRepo.deleteCategory(message.id);
     } catch (error) {
       console.error('Erro ao processar a mensagem:', error);
     }

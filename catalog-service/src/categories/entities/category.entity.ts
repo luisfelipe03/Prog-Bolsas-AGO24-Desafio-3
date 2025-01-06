@@ -15,7 +15,7 @@ export class Category {
   @OneToMany(() => Product, (product) => product.category)
   products: Product[];
 
-  static create(data: Partial<Category>) {
+  static create(data: Category) {
     const category = new Category();
     Object.assign(category, data);
     return category;
