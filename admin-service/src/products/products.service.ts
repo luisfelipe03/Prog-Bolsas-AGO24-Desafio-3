@@ -71,7 +71,6 @@ export class ProductsService {
       });
 
       const savedProduct = await this.productRepo.save(product);
-      console.log('Product created:', savedProduct);
 
       await this.amqpConnection.publish(
         'products',

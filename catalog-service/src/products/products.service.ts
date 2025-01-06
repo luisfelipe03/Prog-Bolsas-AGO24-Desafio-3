@@ -1,24 +1,16 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Product } from './entities/product.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CategoriesService } from '../categories/categories.service';
 import { NoProductsNotFoundException } from './errors/noProductNotFoundException';
 import { ProductNotFoundException } from './errors/productNotFoundException';
-import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+import { TypeOrmProductRepository } from './repositories/typeORM/type-orm-product-repository';
 
 @Injectable()
 export class ProductsService {
-  constructor(
-    @InjectRepository(Product) private productRepo: Repository<Product>,
-    @Inject() private readonly categoryService: CategoriesService,
-    private amqpConnection: AmqpConnection,
-  ) {}
+  constructor(private productRepo: TypeOrmProductRepository) {}
 
   async findAll() {
-    const products = await this.productRepo.find({
-      relations: ['category'],
-    });
+    const products = await this.productRepo.getProducts();
     if (products.length === 0) {
       throw new NoProductsNotFoundException();
     }
@@ -26,10 +18,7 @@ export class ProductsService {
   }
 
   async findOne(id: string) {
-    const product = await this.productRepo.findOne({
-      where: { id },
-      relations: ['category'],
-    });
+    const product = await this.productRepo.getProductById(id);
 
     if (!product) {
       throw new ProductNotFoundException();
@@ -60,9 +49,7 @@ export class ProductsService {
   })
   async handleProductUpdated(message: Product) {
     try {
-      const product = await this.productRepo.findOne({
-        where: { id: message.id },
-      });
+      const product = await this.productRepo.getProductById(message.id);
 
       if (!product) {
         throw new ProductNotFoundException();
@@ -83,15 +70,13 @@ export class ProductsService {
   })
   async handleProductDeleted(message: { id: string }) {
     try {
-      const product = await this.productRepo.findOne({
-        where: { id: message.id },
-      });
+      const product = await this.productRepo.getProductById(message.id);
 
       if (!product) {
         throw new ProductNotFoundException();
       }
 
-      await this.productRepo.delete(product);
+      await this.productRepo.deleteProduct(product.id);
     } catch (error) {
       console.error('Erro ao processar a mensagem:', error);
     }
