@@ -36,7 +36,7 @@ export class Product {
   })
   category: Category;
 
-  static create(data: Partial<Product>) {
+  static create(data: Product) {
     const product = new Product();
     Object.assign(product, data);
     return product;
