@@ -3,11 +3,17 @@ import { CategoriesService } from './categories.service';
 import { CategoriesController } from './categories.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
+import { TypeORMCategoryRepository } from './repositories/typeORM/type-orm-category-repository';
+import { InMemoryCategoryRepository } from './repositories/in-memory/in-memory-category-repository';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Category])],
   controllers: [CategoriesController],
-  providers: [CategoriesService],
+  providers: [
+    CategoriesService,
+    TypeORMCategoryRepository,
+    InMemoryCategoryRepository,
+  ],
   exports: [CategoriesService],
 })
 export class CategoriesModule {}

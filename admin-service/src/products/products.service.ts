@@ -1,8 +1,5 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
-import { Product } from './entities/product.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import {
   DeleteObjectCommand,
   PutObjectCommand,
@@ -15,6 +12,8 @@ import { ProductNotFoundException } from './errors/productNotFoundException';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { env } from 'src/shared/env';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { TypeOrmProductRepository } from './repositories/typeORM/type-orm-product-repository';
+import { Product } from './entities/product.entity';
 
 @Injectable()
 export class ProductsService {
@@ -23,8 +22,8 @@ export class ProductsService {
   });
 
   constructor(
-    @InjectRepository(Product) private productRepo: Repository<Product>,
     @Inject() private readonly categoryService: CategoriesService,
+    private productRepo: TypeOrmProductRepository,
     private amqpConnection: AmqpConnection,
   ) {}
 
@@ -60,13 +59,19 @@ export class ProductsService {
         image_url = `https://${env.AWS_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/products/${fileName}`;
       }
 
-      const product = this.productRepo.create({
-        ...createProductDto,
+      const product = Product.create({
+        name,
+        description: createProductDto.description,
+        brand: createProductDto.brand,
+        volume: createProductDto.volume,
+        alcohol_content: createProductDto.alcohol_content,
+        price: createProductDto.price,
         image_url,
         category,
       });
 
       const savedProduct = await this.productRepo.save(product);
+      console.log('Product created:', savedProduct);
 
       await this.amqpConnection.publish(
         'products',
@@ -85,9 +90,7 @@ export class ProductsService {
   }
 
   async findAll() {
-    const products = await this.productRepo.find({
-      relations: ['category'],
-    });
+    const products = await this.productRepo.getProducts();
     if (products.length === 0) {
       throw new NoProductsNotFoundException();
     }
@@ -95,10 +98,7 @@ export class ProductsService {
   }
 
   async findOne(id: string) {
-    const product = await this.productRepo.findOne({
-      where: { id },
-      relations: ['category'],
-    });
+    const product = await this.productRepo.getProductById(id);
 
     if (!product) {
       throw new ProductNotFoundException();
@@ -108,10 +108,7 @@ export class ProductsService {
   }
 
   async update(id: string, updateProductDto: UpdateProductDto) {
-    const product = await this.productRepo.findOne({
-      where: { id },
-      relations: ['category'],
-    });
+    const product = await this.productRepo.getProductById(id);
 
     if (!product) {
       throw new ProductNotFoundException();
@@ -187,10 +184,7 @@ export class ProductsService {
   }
 
   async remove(id: string) {
-    const product = await this.productRepo.findOne({
-      where: { id },
-      relations: ['category'],
-    });
+    const product = await this.productRepo.getProductById(id);
 
     if (!product) {
       throw new ProductNotFoundException();
@@ -217,6 +211,6 @@ export class ProductsService {
 
     await this.amqpConnection.publish('products', 'product.deleted', product);
 
-    return this.productRepo.remove(product);
+    return this.productRepo.deleteProduct(product.id);
   }
 }

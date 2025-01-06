@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
 import { env } from 'src/shared/env';
 import {
@@ -7,13 +6,13 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { Repository } from 'typeorm';
 import { FileUploadException } from 'src/shared/errors/fileUploadException';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoryNotFoundException } from './errors/categoryNotFoundException';
 import { NoCategoriesFoundException } from './errors/noCategoriesFoundException';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { TypeORMCategoryRepository } from './repositories/typeORM/type-orm-category-repository';
 
 @Injectable()
 export class CategoriesService {
@@ -22,7 +21,7 @@ export class CategoriesService {
   });
 
   constructor(
-    @InjectRepository(Category) private categoryRepo: Repository<Category>,
+    private categoryRepo: TypeORMCategoryRepository,
     private amqpConnection: AmqpConnection,
   ) {}
 
@@ -70,7 +69,7 @@ export class CategoriesService {
   }
 
   async findAll() {
-    const categories = await this.categoryRepo.find();
+    const categories = await this.categoryRepo.getCategories();
     if (categories.length === 0) {
       throw new NoCategoriesFoundException();
     }
@@ -78,9 +77,7 @@ export class CategoriesService {
   }
 
   async findOne(id: string) {
-    const category = await this.categoryRepo.findOne({
-      where: { id },
-    });
+    const category = await this.categoryRepo.getCategoryById(id);
 
     if (!category) {
       throw new CategoryNotFoundException();
@@ -90,7 +87,7 @@ export class CategoriesService {
   }
 
   async update({ id, cover, name }: UpdateCategoryDto) {
-    const category = await this.categoryRepo.findOneBy({ id });
+    const category = await this.categoryRepo.getCategoryById(id);
 
     if (!category) {
       throw new CategoryNotFoundException();
@@ -146,7 +143,7 @@ export class CategoriesService {
   }
 
   async remove(id: string) {
-    const category = await this.categoryRepo.findOneBy({ id });
+    const category = await this.categoryRepo.getCategoryById(id);
 
     if (!category) {
       throw new CategoryNotFoundException();
@@ -179,6 +176,6 @@ export class CategoriesService {
       category,
     );
 
-    return this.categoryRepo.delete(id);
+    return this.categoryRepo.deleteCategory(id);
   }
 }
