@@ -55,4 +55,11 @@ export class DistributorsController {
       clientCep,
     );
   }
+
+  @Get('closest-pdv-and-store/:clientCep')
+  findNearestStoreAndPdvByClientCep(@Param('clientCep') clientCep: string) {
+    return this.distributorsService.findNearestStoreAndPdvByClientCep(
+      clientCep,
+    );
+  }
 }

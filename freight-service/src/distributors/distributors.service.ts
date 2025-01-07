@@ -64,14 +64,35 @@ export class DistributorsService {
   }
 
   async findNearbyDistributorsByClientCep(clientCep: string) {
-    const clientAddress =
+    const distribuidors =
       await this.distributorRepo.findManyNearbyDistributors(clientCep);
 
-    if (!clientAddress) {
+    if (!distribuidors) {
       throw new NoDistributorsFoundException();
     }
 
-    return clientAddress;
+    return distribuidors;
+  }
+
+  async findNearestStoreAndPdvByClientCep(clientCep: string) {
+    try {
+      const distributors =
+        await this.distributorRepo.findManyNearbyDistributors(clientCep);
+
+      if (!distributors || distributors.length === 0) {
+        throw new NoDistributorsFoundException();
+      }
+
+      const nearestStore = distributors.find((d) => d.type === 'store');
+      const nearestPdv = distributors.find((d) => d.type === 'pdv');
+
+      return {
+        nearestStore,
+        nearestPdv,
+      };
+    } catch (error) {
+      throw new Error(`Error fetching nearest store and PDV: ${error.message}`);
+    }
   }
 
   @RabbitSubscribe({

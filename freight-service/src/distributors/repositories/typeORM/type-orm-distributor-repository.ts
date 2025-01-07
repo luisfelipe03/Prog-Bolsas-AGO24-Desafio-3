@@ -5,6 +5,8 @@ import { NotFoundException } from '@nestjs/common';
 import { DistributorRepository } from '../distributor.repository';
 import { GetCoordinatesByAddress } from 'src/shared/external/googleGeoconding';
 
+export type DistributorWithDistance = Distributor & { distance: number };
+
 export class TypeOrmDistributorRepository implements DistributorRepository {
   constructor(
     @InjectRepository(Distributor)
@@ -98,7 +100,9 @@ export class TypeOrmDistributorRepository implements DistributorRepository {
     }
   }
 
-  async findManyNearbyDistributors(clientCep: string) {
+  async findManyNearbyDistributors(
+    clientCep: string,
+  ): Promise<DistributorWithDistance[]> {
     try {
       const address = await GetCoordinatesByAddress.executeByCep(clientCep);
       const { latitude, longitude } = address;
@@ -108,39 +112,24 @@ export class TypeOrmDistributorRepository implements DistributorRepository {
         .innerJoinAndSelect('distributor.address', 'address')
         .addSelect(
           `6371 * ACOS(
-              COS(RADIANS(:latitude)) 
-              * COS(RADIANS(address.latitude)) 
-              * COS(RADIANS(address.longitude) - RADIANS(:longitude)) 
-              + SIN(RADIANS(:latitude)) 
-              * SIN(RADIANS(address.latitude))
-            )`,
+            COS(RADIANS(:latitude)) 
+            * COS(RADIANS(address.latitude)) 
+            * COS(RADIANS(address.longitude) - RADIANS(:longitude)) 
+            + SIN(RADIANS(:latitude)) 
+            * SIN(RADIANS(address.latitude))
+          )`,
           'distance',
         )
+        .where('distributor.is_active = :isActive', { isActive: true }) // Filtra apenas distribuidores ativos
         .setParameters({ latitude, longitude })
         .orderBy('distance', 'ASC');
 
-      const rawResults = await query.getRawMany();
+      const rawResult = await query.getRawAndEntities();
 
-      const distributors = rawResults.map((result) => ({
-        id: result['distributor_id'],
-        name: result['distributor_name'],
-        phone: result['distributor_phone'],
-        cnpj: result['distributor_cnpj'],
-        address: {
-          id: result['address_id'],
-          street: result['address_street'],
-          number: result['address_number'],
-          neighborhood: result['address_neighborhood'],
-          city: result['address_city'],
-          state: result['address_state'],
-          zip: result['address_zip'],
-          latitude: result['address_latitude'],
-          longitude: result['address_longitude'],
-        },
-        distance: parseFloat(result.distance.toFixed(1)),
+      return rawResult.entities.map((distributor, index) => ({
+        ...distributor,
+        distance: parseFloat(rawResult.raw[index].distance.toFixed(1)),
       }));
-
-      return distributors;
     } catch (error) {
       throw new Error(`Error fetching nearby distributors: ${error.message}`);
     }
