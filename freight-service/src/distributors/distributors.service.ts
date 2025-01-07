@@ -102,7 +102,6 @@ export class DistributorsService {
   })
   async handleStoresCreated(msg: Distributor) {
     try {
-      console.log('Received message:', msg);
       const distributor = Distributor.create(msg);
       await this.distributorRepo.saveDistributor(distributor);
     } catch (error) {
@@ -117,7 +116,6 @@ export class DistributorsService {
   })
   async handleStoresUpdated(msg: Distributor) {
     try {
-      console.log('Received message:', msg);
       const distributor = Distributor.create(msg);
       await this.distributorRepo.updateDistributor(distributor);
     } catch (error) {

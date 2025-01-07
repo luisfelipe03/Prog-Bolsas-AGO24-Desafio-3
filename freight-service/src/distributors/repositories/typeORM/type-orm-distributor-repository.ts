@@ -69,7 +69,6 @@ export class TypeOrmDistributorRepository implements DistributorRepository {
 
   async updateDistributor(distributor: Distributor): Promise<Distributor> {
     try {
-      console.log('Updating distributor:', distributor);
       const existingDistributor = await this.getDistributorById(distributor.id);
       if (!existingDistributor) {
         throw new NotFoundException(

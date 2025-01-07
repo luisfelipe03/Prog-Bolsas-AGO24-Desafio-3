@@ -14,7 +14,6 @@ export class CategoriesController {
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    console.log('id', id);
     return this.categoryService.findOne(id);
   }
 }
