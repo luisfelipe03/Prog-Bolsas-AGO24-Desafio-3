@@ -40,6 +40,7 @@ export class ProductsService {
 
     try {
       if (cover) {
+        console.log(cover);
         if (!['image/png', 'image/jpeg'].includes(cover.mimetype)) {
           throw new BadRequestException(
             'Invalid file type. Only PNG and JPEG are allowed.',
@@ -69,6 +70,8 @@ export class ProductsService {
         image_url,
         category,
       });
+
+      console.log(product);
 
       const savedProduct = await this.productRepo.save(product);
 

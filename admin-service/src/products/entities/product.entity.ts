@@ -15,7 +15,7 @@ export class Product {
   @Column()
   brand: string;
 
-  @Column({ type: 'decimal', precision: 5, scale: 2 })
+  @Column({ type: 'decimal', precision: 7, scale: 2 })
   volume: number;
 
   @Column({ type: 'decimal', precision: 4, scale: 2, nullable: true })
