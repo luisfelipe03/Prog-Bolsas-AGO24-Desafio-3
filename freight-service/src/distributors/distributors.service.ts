@@ -83,12 +83,12 @@ export class DistributorsService {
         throw new NoDistributorsFoundException();
       }
 
-      const nearestStore = distributors.find((d) => d.type === 'store');
-      const nearestPdv = distributors.find((d) => d.type === 'pdv');
+      const store = distributors.find((d) => d.type === 'store');
+      const pdv = distributors.find((d) => d.type === 'pdv');
 
       return {
-        nearestStore,
-        nearestPdv,
+        store,
+        pdv,
       };
     } catch (error) {
       throw new Error(`Error fetching nearest store and PDV: ${error.message}`);

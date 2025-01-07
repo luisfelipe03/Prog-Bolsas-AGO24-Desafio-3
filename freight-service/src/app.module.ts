@@ -5,6 +5,7 @@ import { Distributor } from './distributors/entities/distributor.entity';
 import { Address } from './distributors/entities/address.entity';
 import { DistributorsModule } from './distributors/distributors.module';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
+import { FreightCalculatorModule } from './freight-calculator/freight-calculator.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
     }),
     DistributorsModule,
     RabbitmqModule,
+    FreightCalculatorModule,
   ],
   controllers: [],
   providers: [],

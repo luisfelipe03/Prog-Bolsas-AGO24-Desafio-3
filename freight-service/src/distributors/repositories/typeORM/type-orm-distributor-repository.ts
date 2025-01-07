@@ -27,7 +27,7 @@ export class TypeOrmDistributorRepository implements DistributorRepository {
   async getDistributorById(id: string): Promise<Distributor> {
     try {
       const distributor = await this.distributorRepo.findOne({
-        where: { id, is_active: true },
+        where: { id },
         relations: ['address'],
       });
       if (!distributor) {
@@ -69,6 +69,7 @@ export class TypeOrmDistributorRepository implements DistributorRepository {
 
   async updateDistributor(distributor: Distributor): Promise<Distributor> {
     try {
+      console.log('Updating distributor:', distributor);
       const existingDistributor = await this.getDistributorById(distributor.id);
       if (!existingDistributor) {
         throw new NotFoundException(
