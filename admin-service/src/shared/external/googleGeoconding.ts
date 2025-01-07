@@ -62,7 +62,7 @@ export class GetCoordinatesByAddress {
         state = component.short_name;
       }
       if (types.includes('postal_code')) {
-        zip = component.long_name;
+        zip = component.long_name.replace('-', '');
       }
     });
 
