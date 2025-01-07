@@ -145,7 +145,6 @@ export class DistributorsService {
     }
 
     const { phone, email, password, cnpj, address } = updateDistributorDto;
-    console.log('Service: ', phone, email, password, cnpj, address);
 
     try {
       const whereConditions: any[] = [];
@@ -167,8 +166,6 @@ export class DistributorsService {
               relations: ['address'],
             })
           : null;
-
-      console.log('duplicateDistributor: ', duplicateDistributor);
 
       if (duplicateDistributor) {
         throw new ConflictException(
