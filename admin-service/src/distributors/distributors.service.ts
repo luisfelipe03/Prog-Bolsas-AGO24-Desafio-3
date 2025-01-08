@@ -173,7 +173,17 @@ export class DistributorsService {
         );
       }
 
-      if (address && address !== distributor.address) {
+      if (address) {
+        const oldAddress = await this.addressRepo.findOne({
+          where: { id: distributor.address.id },
+        });
+
+        if (!oldAddress) {
+          throw new ConflictException(
+            'Endereço do distribuidor não encontrado.',
+          );
+        }
+
         const addressWithCoordinates =
           await GetCoordinatesByAddress.execute(address);
 
@@ -184,20 +194,36 @@ export class DistributorsService {
           throw new ConflictException('Endereço não encontrado ou inválido.');
         }
 
-        Object.assign(updateDistributorDto.address, addressWithCoordinates);
+        const newAddress = Object.assign(oldAddress, addressWithCoordinates);
+
+        await this.addressRepo.save(newAddress);
+
+        distributor.address = newAddress;
       }
 
-      if (password && !(await bcrypt.compare(password, distributor.password))) {
+      if (password) {
+        const isSamePassword = await bcrypt.compare(
+          password,
+          distributor.password,
+        );
+
+        if (isSamePassword) {
+          throw new ConflictException(
+            'A nova senha não pode ser igual à antiga.',
+          );
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         updateDistributorDto.password = hashedPassword;
       }
 
       Object.keys(updateDistributorDto).forEach((key) => {
-        if (
-          updateDistributorDto[key] &&
-          updateDistributorDto[key] !== distributor[key]
-        ) {
-          distributor[key] = updateDistributorDto[key];
+        if (updateDistributorDto[key]) {
+          if (key === 'address') {
+            Object.assign(distributor.address, updateDistributorDto.address);
+          } else if (updateDistributorDto[key] !== distributor[key]) {
+            distributor[key] = updateDistributorDto[key];
+          }
         }
       });
 
