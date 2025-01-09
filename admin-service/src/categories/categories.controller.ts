@@ -14,7 +14,6 @@ import { CategoriesService } from './categories.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { FileUploadException } from '../shared/errors/fileUploadException';
-import { CategoryNotFoundException } from './errors/categoryNotFoundException';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import {
   ApiTags,
@@ -138,11 +137,7 @@ export class CategoriesController {
     },
   })
   async findOne(@Param('id') id: string) {
-    const category = await this.categoryService.findOne(id);
-    if (!category) {
-      throw new CategoryNotFoundException();
-    }
-    return category;
+    return this.categoryService.findOne(id);
   }
 
   @Patch(':id')

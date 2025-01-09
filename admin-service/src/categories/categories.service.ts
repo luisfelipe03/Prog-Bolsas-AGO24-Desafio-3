@@ -13,6 +13,7 @@ import { NoCategoriesFoundException } from './errors/noCategoriesFoundException'
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { TypeORMCategoryRepository } from './repositories/typeORM/type-orm-category-repository';
+import logger from 'src/shared/logger';
 
 @Injectable()
 export class CategoriesService {
@@ -42,6 +43,11 @@ export class CategoriesService {
           }),
         );
 
+        logger.info('Image uploaded to S3', {
+          bucket: env.AWS_BUCKET_NAME,
+          key: `category/${fileName}`,
+        });
+
         image_url = `https://${env.AWS_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/category/${fileName}`;
       } else {
         image_url =
@@ -61,9 +67,16 @@ export class CategoriesService {
         savedCategory,
       );
 
+      logger.info('Category created', { category: savedCategory });
+      logger.info('Message published to RabbitMQ', {
+        exchange: 'categories',
+        routingKey: 'category.created',
+        payload: savedCategory,
+      });
+
       return savedCategory;
     } catch (error) {
-      console.error('Error uploading image to S3:', error);
+      logger.error('Error uploading image to S3:', error);
       throw new FileUploadException('Error uploading image to S3');
     }
   }
@@ -71,6 +84,7 @@ export class CategoriesService {
   async findAll() {
     const categories = await this.categoryRepo.getCategories();
     if (categories.length === 0) {
+      logger.info('No categories found');
       throw new NoCategoriesFoundException();
     }
     return categories;
@@ -80,6 +94,7 @@ export class CategoriesService {
     const category = await this.categoryRepo.getCategoryById(id);
 
     if (!category) {
+      logger.info('Category not found');
       throw new CategoryNotFoundException();
     }
 
@@ -90,6 +105,7 @@ export class CategoriesService {
     const category = await this.categoryRepo.getCategoryById(id);
 
     if (!category) {
+      logger.info('Category not found');
       throw new CategoryNotFoundException();
     }
 
@@ -108,8 +124,13 @@ export class CategoriesService {
               Key: oldFileKey,
             }),
           );
+
+          logger.info('Old image deleted from S3', {
+            bucket: env.AWS_BUCKET_NAME,
+            key: oldFileKey,
+          });
         } catch (error) {
-          console.error('Error deleting old image from S3', error);
+          logger.error('Error deleting old image from S3', error);
           throw new FileUploadException('Error deleting old image from S3');
         }
       }
@@ -125,8 +146,13 @@ export class CategoriesService {
             Body: cover.buffer,
           }),
         );
+
+        logger.info('Image uploaded to S3', {
+          bucket: env.AWS_BUCKET_NAME,
+          key: `category/${fileName}`,
+        });
       } catch (error) {
-        console.error('Error uploading new image to S3:', error);
+        logger.error('Error uploading new image to S3:', error);
         throw new FileUploadException('Error uploading new image to S3');
       }
 
@@ -138,6 +164,13 @@ export class CategoriesService {
       'category.updated',
       category,
     );
+
+    logger.info('Category updated', { category });
+    logger.info('Message published to RabbitMQ', {
+      exchange: 'categories',
+      routingKey: 'category.updated',
+      payload: category,
+    });
 
     return this.categoryRepo.save(category);
   }
@@ -163,9 +196,14 @@ export class CategoriesService {
               Key: imageKey,
             }),
           );
+
+          logger.info('Image deleted from S3', {
+            bucket: env.AWS_BUCKET_NAME,
+            key: imageKey,
+          });
         }
       } catch (error) {
-        console.error('Error deleting image from S3:', error);
+        logger.error('Error deleting image from S3:', error);
         throw new FileUploadException('Error deleting image from S3');
       }
     }
@@ -175,6 +213,13 @@ export class CategoriesService {
       'category.deleted',
       category,
     );
+
+    logger.info('Category deleted', { category });
+    logger.info('Message published to RabbitMQ', {
+      exchange: 'categories',
+      routingKey: 'category.deleted',
+      payload: category,
+    });
 
     return this.categoryRepo.deleteCategory(id);
   }

@@ -14,6 +14,7 @@ import { env } from 'src/shared/env';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { TypeOrmProductRepository } from './repositories/typeORM/type-orm-product-repository';
 import { Product } from './entities/product.entity';
+import logger from 'src/shared/logger';
 
 @Injectable()
 export class ProductsService {
@@ -32,6 +33,7 @@ export class ProductsService {
 
     const category = await this.categoryService.findOne(category_id);
     if (!category) {
+      logger.info('Category not found');
       throw new BadRequestException('Category not found');
     }
 
@@ -56,6 +58,11 @@ export class ProductsService {
           }),
         );
 
+        logger.info('Image uploaded to S3', {
+          bucket: env.AWS_BUCKET_NAME,
+          key: `products/${fileName}`,
+        });
+
         image_url = `https://${env.AWS_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/products/${fileName}`;
       }
 
@@ -78,12 +85,20 @@ export class ProductsService {
         savedProduct,
       );
 
+      logger.info('Product created', { product: savedProduct });
+      logger.info('Message published to RabbitMQ', {
+        exchange: 'products',
+        routingKey: 'product.created',
+        payload: savedProduct,
+      });
+
       return savedProduct;
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       if (error instanceof BadRequestException) {
         throw error;
       }
+      logger.error('Error uploading image to S3:', error);
       throw new FileUploadException('Error uploading image to S3');
     }
   }
@@ -91,6 +106,7 @@ export class ProductsService {
   async findAll() {
     const products = await this.productRepo.getProducts();
     if (products.length === 0) {
+      logger.info('No products found');
       throw new NoProductsNotFoundException();
     }
     return products;
@@ -100,6 +116,7 @@ export class ProductsService {
     const product = await this.productRepo.getProductById(id);
 
     if (!product) {
+      logger.info('Product not found');
       throw new ProductNotFoundException();
     }
 
@@ -152,8 +169,13 @@ export class ProductsService {
               Key: oldFileKey,
             }),
           );
+
+          logger.info('Old image deleted from S3', {
+            bucket: env.AWS_BUCKET_NAME,
+            key: oldFileKey,
+          });
         } catch (error) {
-          console.error('Error deleting old image from S3', error);
+          logger.error('Error deleting old image from S3', error);
           throw new FileUploadException('Error deleting old image from S3');
         }
       }
@@ -169,17 +191,35 @@ export class ProductsService {
             Body: cover.buffer,
           }),
         );
+
+        logger.info('Image uploaded to S3', {
+          bucket: env.AWS_BUCKET_NAME,
+          key: `products/${fileName}`,
+        });
       } catch (error) {
-        console.error('Error uploading new image to S3:', error);
+        logger.error('Error uploading new image to S3:', error);
         throw new FileUploadException('Error uploading new image to S3');
       }
 
       product.image_url = `https://${env.AWS_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/products/${fileName}`;
     }
 
-    await this.amqpConnection.publish('products', 'product.updated', product);
+    const updatedProduct = await this.productRepo.save(product);
 
-    return this.productRepo.save(product);
+    await this.amqpConnection.publish(
+      'products',
+      'product.updated',
+      updatedProduct,
+    );
+
+    logger.info('Product updated', { product: updatedProduct });
+    logger.info('Message published to RabbitMQ', {
+      exchange: 'products',
+      routingKey: 'product.updated',
+      payload: updatedProduct,
+    });
+
+    return updatedProduct;
   }
 
   async remove(id: string) {
@@ -202,14 +242,25 @@ export class ProductsService {
             Key: fileKey,
           }),
         );
+        logger.info('Image deleted from S3', {
+          bucket: env.AWS_BUCKET_NAME,
+          key: fileKey,
+        });
       } catch (error) {
-        console.error('Error deleting image from S3', error);
+        logger.error('Error deleting image from S3', error);
         throw new FileUploadException('Error deleting image from S3');
       }
     }
 
+    await this.productRepo.deleteProduct(product.id);
+
     await this.amqpConnection.publish('products', 'product.deleted', product);
 
-    return this.productRepo.deleteProduct(product.id);
+    logger.info('Product deleted', { product });
+    logger.info('Message published to RabbitMQ', {
+      exchange: 'products',
+      routingKey: 'product.deleted',
+      payload: product,
+    });
   }
 }

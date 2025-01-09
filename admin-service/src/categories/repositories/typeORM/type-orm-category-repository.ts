@@ -49,11 +49,7 @@ export class TypeORMCategoryRepository implements CategoryRepository {
 
   async getCategoryById(id: string): Promise<Category> {
     try {
-      const category = await this.categoryRepo.findOne({ where: { id } });
-      if (!category) {
-        throw new NotFoundException(`Category with ID ${id} not found`);
-      }
-      return category;
+      return await this.categoryRepo.findOne({ where: { id } });
     } catch (error) {
       throw new Error(`Error fetching category by ID: ${error.message}`);
     }

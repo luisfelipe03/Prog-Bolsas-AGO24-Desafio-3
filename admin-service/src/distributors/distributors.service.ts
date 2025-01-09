@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { OutputDistributorDto } from './dto/output-distributor.dto';
 import { UpdateDistributorDto } from './dto/update-distributor.dto';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import logger from 'src/shared/logger';
 
 @Injectable()
 export class DistributorsService {
@@ -40,6 +41,7 @@ export class DistributorsService {
         !addressWithCoordinates.latitude ||
         !addressWithCoordinates.longitude
       ) {
+        logger.error('Address not found or invalid');
         throw new ConflictException('Endereço não encontrado ou inválido.');
       }
 
@@ -66,10 +68,13 @@ export class DistributorsService {
       });
 
       if (addressExists) {
+        logger.error('Address already exists');
         throw new ConflictException('Endereço já cadastrado.');
       }
 
       const savedAddress = await queryRunner.manager.save(newAddress);
+
+      logger.info('Address created', savedAddress);
 
       const distributor = this.distributorRepo.create({
         name,
@@ -91,9 +96,18 @@ export class DistributorsService {
         savedDistributor,
       );
 
+      logger.info('Distributor created', savedDistributor);
+      logger.info('Message published to RabbitMQ', {
+        exchange: 'stores',
+        routingKey: 'store.created',
+        payload: savedDistributor,
+      });
+
       return savedDistributor;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+
+      logger.error(error);
 
       if (
         error instanceof QueryFailedError &&
@@ -116,6 +130,7 @@ export class DistributorsService {
     });
 
     if (distributors.length === 0) {
+      logger.info('No distributors found');
       throw new NoDistributorsFoundException();
     }
 
@@ -128,6 +143,7 @@ export class DistributorsService {
       relations: ['address'],
     });
     if (!distributor) {
+      logger.info('Distributor not found');
       throw new DistributorNotFoundException();
     }
 
@@ -141,6 +157,7 @@ export class DistributorsService {
     });
 
     if (!distributor) {
+      logger.info('Distributor not found');
       throw new DistributorNotFoundException();
     }
 
@@ -168,6 +185,7 @@ export class DistributorsService {
           : null;
 
       if (duplicateDistributor) {
+        logger.error('Distributor already exists');
         throw new ConflictException(
           'Já existe um distribuidor com o mesmo CNPJ, telefone ou e-mail.',
         );
@@ -179,6 +197,7 @@ export class DistributorsService {
         });
 
         if (!oldAddress) {
+          logger.error('Address not found');
           throw new ConflictException(
             'Endereço do distribuidor não encontrado.',
           );
@@ -191,6 +210,7 @@ export class DistributorsService {
           !addressWithCoordinates.latitude ||
           !addressWithCoordinates.longitude
         ) {
+          logger.error('Address not found or invalid');
           throw new ConflictException('Endereço não encontrado ou inválido.');
         }
 
@@ -199,6 +219,8 @@ export class DistributorsService {
         await this.addressRepo.save(newAddress);
 
         distributor.address = newAddress;
+
+        logger.info('Address updated', newAddress);
       }
 
       if (password) {
@@ -231,8 +253,16 @@ export class DistributorsService {
 
       await this.amqpConnection.publish('stores', 'store.updated', distributor);
 
+      logger.info('Distributor updated', distributor);
+      logger.info('Message published to RabbitMQ', {
+        exchange: 'stores',
+        routingKey: 'store.updated',
+        payload: distributor,
+      });
+
       return distributor;
     } catch (error) {
+      logger.error(error);
       if (
         error instanceof QueryFailedError &&
         error.message.includes('duplicate key value violates unique constraint')
@@ -263,6 +293,13 @@ export class DistributorsService {
 
     await this.amqpConnection.publish('stores', 'store.updated', distributor);
 
+    logger.info('Distributor desactivated', distributor);
+    logger.info('Message published to RabbitMQ', {
+      exchange: 'stores',
+      routingKey: 'store.updated',
+      payload: distributor,
+    });
+
     return distributor;
   }
 
@@ -282,6 +319,13 @@ export class DistributorsService {
     await this.distributorRepo.save(distributor);
 
     await this.amqpConnection.publish('stores', 'store.updated', distributor);
+
+    logger.info('Distributor activated', distributor);
+    logger.info('Message published to RabbitMQ', {
+      exchange: 'stores',
+      routingKey: 'store.updated',
+      payload: distributor,
+    });
 
     return distributor;
   }
