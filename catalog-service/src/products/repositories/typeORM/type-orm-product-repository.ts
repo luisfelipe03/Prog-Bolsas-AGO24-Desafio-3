@@ -32,14 +32,10 @@ export class TypeOrmProductRepository implements ProductRepository {
 
   async getProductById(id: string): Promise<Product> {
     try {
-      const product = await this.productRepo.findOne({
+      return await this.productRepo.findOne({
         where: { id },
         relations: ['category'],
       });
-      if (!product) {
-        throw new NotFoundException(`Product with ID ${id} not found`);
-      }
-      return product;
     } catch (error) {
       throw new Error(`Error fetching product with ID ${id}: ${error.message}`);
     }

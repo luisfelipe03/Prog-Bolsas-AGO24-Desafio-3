@@ -5,6 +5,7 @@ import { NoCategoriesFoundException } from './errors/noCategoriesFoundException'
 import { CategoryNotFoundException } from './errors/categoryNotFoundException';
 import { validate } from 'uuid';
 import { TypeORMCategoryRepository } from './repositories/typeORM/type-orm-category-repository';
+import logger from 'src/shared/logger';
 
 @Injectable()
 export class CategoriesService {
@@ -13,6 +14,7 @@ export class CategoriesService {
   async findAll() {
     const categories = await this.categoryRepo.getCategories();
     if (categories.length === 0) {
+      logger.error('No categories found');
       throw new NoCategoriesFoundException();
     }
     return categories;
@@ -22,6 +24,7 @@ export class CategoriesService {
     const category = await this.categoryRepo.getCategoryById(id);
 
     if (!category) {
+      logger.error(`Category with ID ${id} not found`);
       throw new CategoryNotFoundException();
     }
 
@@ -39,9 +42,17 @@ export class CategoriesService {
         throw new Error('ID inválido recebido');
       }
 
+      logger.info('Mensagem recebida:', {
+        exchange: 'categories',
+        routingKey: 'category.created',
+        message,
+      });
+
       const category = Category.create(message);
 
-      await this.categoryRepo.save(category);
+      const savedProduct = await this.categoryRepo.save(category);
+
+      logger.info('Categoria criada:', savedProduct);
     } catch (error) {
       console.error('Erro ao processar a mensagem:', error);
     }
@@ -67,7 +78,9 @@ export class CategoriesService {
       if (message.name) category.name = message.name;
       if (message.image_url) category.image_url = message.image_url;
 
-      await this.categoryRepo.save(category);
+      const updatedProduct = await this.categoryRepo.save(category);
+
+      logger.info('Categoria atualizada:', updatedProduct);
     } catch (error) {
       console.error('Erro ao processar a mensagem:', error);
     }
@@ -91,6 +104,8 @@ export class CategoriesService {
       }
 
       await this.categoryRepo.deleteCategory(message.id);
+
+      logger.info('Categoria deletada:', category);
     } catch (error) {
       console.error('Erro ao processar a mensagem:', error);
     }
