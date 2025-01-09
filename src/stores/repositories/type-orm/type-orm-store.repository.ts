@@ -4,6 +4,8 @@ import { IStoreRepository } from '../iStore.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RepositoryError } from 'src/common/errors/repository.error';
+import { StoresResponses1 } from 'src/stores/types/stores-responses.interface';
+import { StoreWithDistance } from 'src/stores/types/store.interface';
 
 export class TypeOrmStoreRepository implements IStoreRepository {
   constructor(
@@ -20,18 +22,25 @@ export class TypeOrmStoreRepository implements IStoreRepository {
 
   async findById(id: string): Promise<Store | undefined> {
     try {
-      return await this.storeRepo.findOne({ where: { id } });
+      return await this.storeRepo.findOne({ where: { storeID: id } });
     } catch (error) {
       throw new RepositoryError('findById', 'Store', error);
     }
   }
 
-  async findAll(limit: number, offset: number): Promise<Store[]> {
+  async findAll(limit: number, offset: number): Promise<StoresResponses1> {
     try {
-      return await this.storeRepo.find({
+      const [stores, total] = await this.storeRepo.findAndCount({
         take: limit,
         skip: offset,
       });
+
+      return {
+        stores,
+        limit,
+        offset,
+        total,
+      };
     } catch (error) {
       throw new RepositoryError('findAll', 'Store', error);
     }
@@ -41,19 +50,30 @@ export class TypeOrmStoreRepository implements IStoreRepository {
     state: string,
     limit: number,
     offset: number,
-  ): Promise<Store[]> {
+  ): Promise<StoresResponses1> {
     try {
-      return await this.storeRepo.find({
+      const [stores, total] = await this.storeRepo.findAndCount({
         where: { state },
         take: limit,
         skip: offset,
       });
+
+      return {
+        stores,
+        limit,
+        offset,
+        total,
+      };
     } catch (error) {
       throw new RepositoryError('findByState', 'Store', error);
     }
   }
 
-  async findNearestStores(clientCoordinates: Coordinates): Promise<Store[]> {
+  async findNearestStores(
+    clientCoordinates: Coordinates,
+    limit: number,
+    offset: number,
+  ): Promise<StoresResponses1> {
     const { latitude, longitude } = clientCoordinates;
 
     try {
@@ -73,14 +93,32 @@ export class TypeOrmStoreRepository implements IStoreRepository {
           takeOutInStore: true,
         })
         .setParameters({ latitude, longitude })
-        .orderBy('distance', 'ASC');
+        .orderBy('distance', 'ASC')
+        .take(limit)
+        .skip(offset);
 
       const rawResult = await query.getRawAndEntities();
 
-      return rawResult.entities.map((store, index) => ({
-        ...store,
-        distance: parseFloat(rawResult.raw[index].distance.toFixed(1)),
-      }));
+      const stores: StoreWithDistance[] = rawResult.entities.map(
+        (store, index) => ({
+          ...store,
+          distance: parseFloat(rawResult.raw[index].distance.toFixed(1)),
+        }),
+      );
+
+      const total = await this.storeRepo
+        .createQueryBuilder('store')
+        .where('store.takeOutInStore = :takeOutInStore', {
+          takeOutInStore: true,
+        })
+        .getCount();
+
+      return {
+        stores,
+        limit,
+        offset,
+        total,
+      };
     } catch (error) {
       throw new RepositoryError('findNearestStores', 'Store', error);
     }

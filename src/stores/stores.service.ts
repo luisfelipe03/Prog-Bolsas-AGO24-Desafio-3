@@ -1,26 +1,32 @@
 import { Injectable } from '@nestjs/common';
-import { CreateStoreDto } from './dto/create-store.dto';
-import { UpdateStoreDto } from './dto/update-store.dto';
+import { TypeOrmStoreRepository } from './repositories/type-orm/type-orm-store.repository';
+import { Coordinates } from './types/address.interface';
 
 @Injectable()
 export class StoresService {
-  create(createStoreDto: CreateStoreDto) {
-    return 'This action adds a new store';
+  constructor(private readonly storeRepo: TypeOrmStoreRepository) {}
+
+  async getAllStores(limit: number, offset: number) {
+    return await this.storeRepo.findAll(limit, offset);
   }
 
-  findAll() {
-    return `This action returns all stores`;
+  async getStoresByState(state: string, limit: number, offset: number) {
+    return await this.storeRepo.findByState(state, limit, offset);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} store`;
+  async getStoreById(id: string) {
+    return await this.storeRepo.findById(id);
   }
 
-  update(id: number, updateStoreDto: UpdateStoreDto) {
-    return `This action updates a #${id} store`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} store`;
+  async getNearestStores(
+    clientCoordinates: Coordinates,
+    limit: number,
+    offset: number,
+  ) {
+    return await this.storeRepo.findNearestStores(
+      clientCoordinates,
+      limit,
+      offset,
+    );
   }
 }

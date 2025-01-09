@@ -1,11 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { IStore } from '../types/store.interface';
 
 @Entity()
-export class Store {
+export class Store implements IStore {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
   storeID: string;
 
   @Column()
