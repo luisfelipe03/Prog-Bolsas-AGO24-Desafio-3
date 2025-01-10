@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { StoresService } from './stores.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
@@ -7,28 +17,58 @@ import { UpdateStoreDto } from './dto/update-store.dto';
 export class StoresController {
   constructor(private readonly storesService: StoresService) {}
 
-  @Post()
-  create(@Body() createStoreDto: CreateStoreDto) {
-    return this.storesService.create(createStoreDto);
+  @Get(':postalCode')
+  async getStoreByPostalCode(
+    @Param('postalCode') postalCode: string,
+    @Query('limit') limit: number,
+    @Query('offset') offset: number,
+  ) {
+    return await this.storesService.getNearestStores(
+      postalCode,
+      limit || 10,
+      offset || 0,
+    );
   }
 
   @Get()
-  findAll() {
-    return this.storesService.findAll();
+  async getAllStores(
+    @Query('limit') limit: number,
+    @Query('offset') offset: number,
+  ) {
+    return await this.storesService.getAllStores(limit || 10, offset || 0);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.storesService.findOne(+id);
+  @Get('state/:state')
+  async getStoresByState(
+    @Param('state') state: string,
+    @Query('limit') limit: number,
+    @Query('offset') offset: number,
+  ) {
+    return await this.storesService.getStoresByState(
+      state.toUpperCase(),
+      limit || 10,
+      offset || 0,
+    );
+  }
+
+  @Get('id/:id')
+  async getStoreById(@Param('id') id: string) {
+    return await this.storesService.getStoreById(id);
+  }
+
+  @Post()
+  async createStore(@Body() storeDto: CreateStoreDto) {
+    return await this.storesService.createStore(storeDto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateStoreDto: UpdateStoreDto) {
-    return this.storesService.update(+id, updateStoreDto);
+  async updateStore(@Param('id') id: string, @Body() storeDto: UpdateStoreDto) {
+    return await this.storesService.updateStore(id, storeDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.storesService.remove(+id);
+  @HttpCode(204)
+  async deleteStore(@Param('id') id: string) {
+    await this.storesService.deleteStore(id);
   }
 }
