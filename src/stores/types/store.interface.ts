@@ -1,5 +1,4 @@
-export interface IStore {
-  storeID: string;
+export interface BaseStore {
   storeName: string;
   takeOutInStore: boolean;
   shippingTimeInDays: number;
@@ -12,6 +11,10 @@ export interface IStore {
   country: string;
   postalCode: string;
   type: 'PDV' | 'LOJA';
+}
+
+export interface IStore extends BaseStore {
+  storeID: string;
 }
 
 export interface StoreWithDistance extends IStore {

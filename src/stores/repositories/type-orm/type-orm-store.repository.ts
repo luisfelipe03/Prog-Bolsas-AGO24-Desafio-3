@@ -22,7 +22,9 @@ export class TypeOrmStoreRepository implements IStoreRepository {
 
   async findById(id: string): Promise<Store | undefined> {
     try {
-      return await this.storeRepo.findOne({ where: { storeID: id } });
+      return await this.storeRepo.findOne({
+        where: { storeID: id },
+      });
     } catch (error) {
       throw new RepositoryError('findById', 'Store', error);
     }
@@ -71,34 +73,55 @@ export class TypeOrmStoreRepository implements IStoreRepository {
 
   async findNearestStores(
     clientCoordinates: Coordinates,
-    limit: number,
-    offset: number,
+    limit: number = 10,
+    offset: number = 0,
   ): Promise<StoresResponses1> {
     const { latitude, longitude } = clientCoordinates;
 
+    // Validação de coordenadas
+    if (isNaN(+latitude) || isNaN(+longitude)) {
+      throw new Error('Coordenadas inválidas fornecidas.');
+    }
+
     try {
+      // Consulta para buscar as lojas mais próximas
       const query = this.storeRepo
         .createQueryBuilder('store')
         .addSelect(
           `6371 * ACOS(
             COS(RADIANS(:latitude)) 
-            * COS(RADIANS(store.latitude)) 
-            * COS(RADIANS(store.longitude) - RADIANS(:longitude)) 
+            * COS(RADIANS(CAST(store.latitude AS double precision))) 
+            * COS(RADIANS(CAST(store.longitude AS double precision)) - RADIANS(:longitude)) 
             + SIN(RADIANS(:latitude)) 
-            * SIN(RADIANS(store.latitude))
+            * SIN(RADIANS(CAST(store.latitude AS double precision)))
           )`,
           'distance',
         )
         .where('store.takeOutInStore = :takeOutInStore', {
           takeOutInStore: true,
         })
-        .setParameters({ latitude, longitude })
+        .setParameters({
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude),
+        })
         .orderBy('distance', 'ASC')
         .take(limit)
         .skip(offset);
 
+      // Executa a query
       const rawResult = await query.getRawAndEntities();
 
+      // Verificação de resultado vazio
+      if (!rawResult.entities.length) {
+        return {
+          stores: [],
+          limit,
+          offset,
+          total: 0,
+        };
+      }
+
+      // Formata os resultados
       const stores: StoreWithDistance[] = rawResult.entities.map(
         (store, index) => ({
           ...store,
@@ -106,6 +129,7 @@ export class TypeOrmStoreRepository implements IStoreRepository {
         }),
       );
 
+      // Contagem total para paginação
       const total = await this.storeRepo
         .createQueryBuilder('store')
         .where('store.takeOutInStore = :takeOutInStore', {
@@ -113,6 +137,7 @@ export class TypeOrmStoreRepository implements IStoreRepository {
         })
         .getCount();
 
+      // Retorna o objeto no formato esperado
       return {
         stores,
         limit,
@@ -120,7 +145,11 @@ export class TypeOrmStoreRepository implements IStoreRepository {
         total,
       };
     } catch (error) {
-      throw new RepositoryError('findNearestStores', 'Store', error);
+      throw new RepositoryError(
+        'findNearestStores',
+        'Store',
+        error.message || error,
+      );
     }
   }
 

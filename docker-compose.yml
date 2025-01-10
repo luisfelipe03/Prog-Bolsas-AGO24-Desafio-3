@@ -1,15 +1,16 @@
 services:
   db:
-    image: bitnami/postgresql:15
+    image: postgres:13
     restart: always
     container_name: postgres_db
     environment:
-      - POSTGRESQL_USERNAME=postgres
-      - POSTGRESQL_PASSWORD=Info@1234
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Info@1234
+      POSTGRES_DB: physical_store
     ports:
       - '5432:5432'
     volumes:
-      - .docker/postgres:/bitnami/postgresql
+      - db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
