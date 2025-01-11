@@ -78,13 +78,11 @@ export class TypeOrmStoreRepository implements IStoreRepository {
   ): Promise<StoresResponses1> {
     const { latitude, longitude } = clientCoordinates;
 
-    // Validação de coordenadas
     if (isNaN(+latitude) || isNaN(+longitude)) {
       throw new Error('Coordenadas inválidas fornecidas.');
     }
 
     try {
-      // Consulta para buscar as lojas mais próximas
       const query = this.storeRepo
         .createQueryBuilder('store')
         .addSelect(
@@ -100,6 +98,15 @@ export class TypeOrmStoreRepository implements IStoreRepository {
         .where('store.takeOutInStore = :takeOutInStore', {
           takeOutInStore: true,
         })
+        .andWhere(
+          `(store.type != 'PDV' OR 6371 * ACOS(
+            COS(RADIANS(:latitude)) 
+            * COS(RADIANS(CAST(store.latitude AS double precision))) 
+            * COS(RADIANS(CAST(store.longitude AS double precision)) - RADIANS(:longitude)) 
+            + SIN(RADIANS(:latitude)) 
+            * SIN(RADIANS(CAST(store.latitude AS double precision)))
+          ) <= 50)`,
+        )
         .setParameters({
           latitude: parseFloat(latitude),
           longitude: parseFloat(longitude),
@@ -108,10 +115,8 @@ export class TypeOrmStoreRepository implements IStoreRepository {
         .take(limit)
         .skip(offset);
 
-      // Executa a query
       const rawResult = await query.getRawAndEntities();
 
-      // Verificação de resultado vazio
       if (!rawResult.entities.length) {
         return {
           stores: [],
@@ -121,7 +126,6 @@ export class TypeOrmStoreRepository implements IStoreRepository {
         };
       }
 
-      // Formata os resultados
       const stores: StoreWithDistance[] = rawResult.entities.map(
         (store, index) => ({
           ...store,
@@ -129,15 +133,8 @@ export class TypeOrmStoreRepository implements IStoreRepository {
         }),
       );
 
-      // Contagem total para paginação
-      const total = await this.storeRepo
-        .createQueryBuilder('store')
-        .where('store.takeOutInStore = :takeOutInStore', {
-          takeOutInStore: true,
-        })
-        .getCount();
+      const total = stores.length;
 
-      // Retorna o objeto no formato esperado
       return {
         stores,
         limit,

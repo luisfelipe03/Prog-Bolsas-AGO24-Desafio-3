@@ -1,0 +1,4 @@
+- terminar o metodo de frete
+- implementar o swagger
+- implementar testes
+- implementar o metodo de frete como eu acho que deveria ser
