@@ -4,16 +4,16 @@ import { ClientFreightResponse, CorreiosResponse } from './correios.types';
 export async function fetchFreightPriceCorreios(
   cepOrigem: string,
   cepDestino: string,
-): Promise<ClientFreightResponse> {
+): Promise<ClientFreightResponse[]> {
   try {
     const response = await axios.post<CorreiosResponse>(
       'https://www.correios.com.br/@@precosEPrazosView',
       {
         cepDestino,
         cepOrigem,
-        comprimento: '50',
-        largura: '50',
-        altura: '50',
+        comprimento: '15',
+        largura: '15',
+        altura: '15',
       },
     );
 
@@ -24,7 +24,7 @@ export async function fetchFreightPriceCorreios(
       description: item.urlTitulo,
     }));
 
-    return { value };
+    return value;
   } catch (error) {
     console.error('Error calculating Correios freight:', error);
     throw new Error('Unable to calculate Correios freight');

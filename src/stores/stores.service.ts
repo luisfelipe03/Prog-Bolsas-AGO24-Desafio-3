@@ -262,7 +262,13 @@ export class StoresService {
         clientPostalCode,
         store.postalCode,
       );
-      deliveryOptions.push(correiosOptions);
+      correiosOptions.forEach((option) => {
+        deliveryOptions.push({
+          prazo: option.prazo,
+          price: option.price,
+          description: option.description,
+        });
+      });
     }
     return deliveryOptions;
   }

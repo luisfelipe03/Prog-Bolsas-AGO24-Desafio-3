@@ -16,10 +16,8 @@ export interface CorreiosResponseItem {
 export type CorreiosResponse = CorreiosResponseItem[];
 
 export interface ClientFreightResponse {
-  value: Array<{
-    prazo: string;
-    codProdutoAgencia: string;
-    price: string;
-    description: string;
-  }>;
+  prazo: string;
+  codProdutoAgencia: string;
+  price: string;
+  description: string;
 }
