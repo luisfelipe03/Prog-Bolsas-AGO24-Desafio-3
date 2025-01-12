@@ -5,20 +5,23 @@ import {
 } from '@nestjs/common';
 import { TypeOrmStoreRepository } from './repositories/type-orm/type-orm-store.repository';
 import { CreateStoreDto } from './dto/create-store.dto';
-import { getAdressByPostalCode } from 'src/utils/external/viacep/get-address-by-postal-code.api';
-import { getCoordinateByAddress } from 'src/utils/external/google/get-coordinate-by-address.api';
+import { getAdressByPostalCode } from 'src/external-integrations/viacep/get-address-by-postal-code.api';
+import { getCoordinateByAddress } from 'src/external-integrations/google_func/get-coordinate-by-address.api';
 import { Store } from './entities/store.entity';
 import logger from 'src/config/logger.config';
 import { UpdateStoreDto } from './dto/update-store.dto';
 import { Address, PartialAddress, PinMaps } from './types/address.interface';
 import { PostalCodeInvalidError } from './errors/postal-code-invalid.error';
 import { Store2, StoresResponses2 } from './types/stores-responses.interface';
-import { calculateDistance } from 'src/utils/external/google/calculate-distance.api';
-import { fetchFreightPriceCorreios } from 'src/utils/external/correios/fetch-freight-price-correios.api';
+import { calculateDistance } from 'src/external-integrations/google_func/calculate-distance.api';
+import { CorreiosService } from 'src/external-integrations/correios/correios.service';
 
 @Injectable()
 export class StoresService {
-  constructor(private readonly storeRepo: TypeOrmStoreRepository) {}
+  constructor(
+    private readonly storeRepo: TypeOrmStoreRepository,
+    private readonly correiosService: CorreiosService,
+  ) {}
 
   async getAllStores(limit: number, offset: number) {
     try {
@@ -257,7 +260,7 @@ export class StoresService {
           description: 'Motoboy',
         });
       }
-      const correiosOptions = await fetchFreightPriceCorreios(
+      const correiosOptions = await this.correiosService.fetchFreightPrice(
         clientPostalCode,
         store.postalCode,
       );

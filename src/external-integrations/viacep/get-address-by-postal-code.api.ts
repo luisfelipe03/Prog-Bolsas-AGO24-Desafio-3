@@ -2,7 +2,7 @@ import axios from 'axios';
 import { ViaCepResponse } from './viacep.types';
 import { PartialAddress } from 'src/stores/types/address.interface';
 import logger from 'src/config/logger.config';
-import { validatePostalCode } from 'src/utils/validations/postal-code-validation.util';
+import { validatePostalCode } from 'src/common/utils/validations/postal-code-validation.util';
 import { PostalCodeInvalidError } from 'src/stores/errors/postal-code-invalid.error';
 
 export const getAdressByPostalCode = async (
