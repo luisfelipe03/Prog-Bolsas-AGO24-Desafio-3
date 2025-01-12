@@ -12,10 +12,7 @@ import logger from 'src/config/logger.config';
 import { UpdateStoreDto } from './dto/update-store.dto';
 import { Address, PartialAddress, PinMaps } from './types/address.interface';
 import { PostalCodeInvalidError } from './errors/postal-code-invalid.error';
-import {
-  StoreResponse2,
-  StoresResponses2,
-} from './types/stores-responses.interface';
+import { Store2, StoresResponses2 } from './types/stores-responses.interface';
 import { calculateDistance } from 'src/utils/external/google/calculate-distance.api';
 import { fetchFreightPriceCorreios } from 'src/utils/external/correios/fetch-freight-price-correios.api';
 
@@ -95,9 +92,9 @@ export class StoresService {
         throw new NotFoundException('No nearby stores found.');
       }
 
-      const storesWithDeliveryPrice = await Promise.all(
+      const storesWithDeliveryOptions = await Promise.all(
         stores.stores.map(async (store) => {
-          const distance = await calculateDistance(
+          const { distance, duration } = await calculateDistance(
             { latitude: store.latitude, longitude: store.longitude },
             {
               latitude: clientAddress.latitude,
@@ -108,6 +105,7 @@ export class StoresService {
           const deliveryOptions = await this.deliveryOptions(
             store,
             distance,
+            duration,
             clientPostalCode,
           );
 
@@ -123,7 +121,7 @@ export class StoresService {
         title: store.storeName,
       }));
 
-      const storesResponse: StoreResponse2[] = storesWithDeliveryPrice.map(
+      const storesResponse: Store2[] = storesWithDeliveryOptions.map(
         (store) => {
           const storeR = {
             name: store.storeName,
@@ -240,20 +238,21 @@ export class StoresService {
   private async deliveryOptions(
     store: Store,
     distance: number,
+    duration: number,
     clientPostalCode: string,
   ) {
     const deliveryOptions = [];
 
     if (store.type === 'PDV' && distance <= 50) {
       deliveryOptions.push({
-        prazo: this.calculatePrazo(distance),
+        prazo: duration.toFixed(0) + ' minutos',
         price: this.calculatePrice(distance),
         description: 'Motoboy',
       });
     } else if (store.type === 'LOJA') {
       if (distance <= 50) {
         deliveryOptions.push({
-          prazo: this.calculatePrazo(distance),
+          prazo: duration.toFixed(0) + ' minutos',
           price: this.calculatePrice(distance),
           description: 'Motoboy',
         });
@@ -275,19 +274,5 @@ export class StoresService {
 
   private calculatePrice(distance: number) {
     return `R$ ${(15 + distance * 0.5).toFixed(2)}`;
-  }
-
-  private calculatePrazo(distance: number) {
-    if (distance <= 10) {
-      return '30 minutos';
-    } else if (distance <= 20) {
-      return '1 hora';
-    } else if (distance <= 30) {
-      return '1 hora e 30 minutos';
-    } else if (distance <= 40) {
-      return '2 horas';
-    } else {
-      return '2 horas e 30 minutos';
-    }
   }
 }

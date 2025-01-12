@@ -9,14 +9,14 @@ export interface StoresResponses1 {
 }
 
 export interface StoresResponses2 {
-  stores: StoreResponse2[];
+  stores: Store2[];
   pins: PinMaps[];
   limit: number;
   offset: number;
   total: number;
 }
 
-export interface StoreResponse2 {
+export interface Store2 {
   name: string;
   city: string;
   postalCode: string;

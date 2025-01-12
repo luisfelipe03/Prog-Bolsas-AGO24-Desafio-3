@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { ClientFreightResponse, CorreiosResponse } from './correios.types';
+import logger from 'src/config/logger.config';
 
 export async function fetchFreightPriceCorreios(
   cepOrigem: string,
@@ -26,7 +27,7 @@ export async function fetchFreightPriceCorreios(
 
     return value;
   } catch (error) {
-    console.error('Error calculating Correios freight:', error);
+    logger.error('Error calculating Correios freight:', error);
     throw new Error('Unable to calculate Correios freight');
   }
 }

@@ -10,3 +10,8 @@ export interface GeocodingAPIResponse {
   }[];
   status: string;
 }
+
+export interface ResponseCalculateDistance {
+  distance: number;
+  duration: number;
+}
