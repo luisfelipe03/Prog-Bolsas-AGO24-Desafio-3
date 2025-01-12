@@ -3,7 +3,7 @@ import { Coordinates } from 'src/stores/types/address.interface';
 import { IStoreRepository } from '../iStore.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RepositoryError } from 'src/common/errors/repository.error';
+import { RepositoryError } from 'src/stores/errors/repository.error';
 import { StoresResponses1 } from 'src/stores/types/stores-responses.interface';
 import { StoreWithDistance } from 'src/stores/types/store.interface';
 

@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsEnum, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+  MaxLength,
+  IsNumberString,
+} from 'class-validator';
 
 export class CreateStoreDto {
   @ApiProperty({
@@ -63,9 +69,19 @@ export class CreateStoreDto {
   @MaxLength(2, { message: 'State must be exactly 2 characters long.' })
   state: string;
 
+  @ApiProperty({
+    description: 'The postal code of the store.',
+    type: String,
+    required: true,
+    example: '12345678',
+  })
   @MaxLength(8, {
     message: 'Postal code must contain exactly 8 digits.',
   })
+  @IsNumberString(
+    { no_symbols: true },
+    { message: 'Postal code must contain only numbers.' },
+  )
   postalCode: string;
 
   @ApiProperty({

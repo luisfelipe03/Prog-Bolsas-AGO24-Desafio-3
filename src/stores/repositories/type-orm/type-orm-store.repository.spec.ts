@@ -2,7 +2,7 @@ import { Repository } from 'typeorm';
 import { Coordinates } from 'src/stores/types/address.interface';
 import { TypeOrmStoreRepository } from './type-orm-store.repository';
 import { Store } from 'src/stores/entities/store.entity';
-import { RepositoryError } from 'src/common/errors/repository.error';
+import { RepositoryError } from 'src/stores/errors/repository.error';
 
 jest.mock('typeorm', () => ({
   Repository: jest.fn().mockImplementation(() => ({

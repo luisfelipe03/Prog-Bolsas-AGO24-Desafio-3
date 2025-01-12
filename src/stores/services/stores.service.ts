@@ -3,24 +3,25 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { TypeOrmStoreRepository } from './repositories/type-orm/type-orm-store.repository';
-import { CreateStoreDto } from './dto/create-store.dto';
-import { getAdressByPostalCode } from 'src/external-integrations/viacep/get-address-by-postal-code.api';
-import { getCoordinateByAddress } from 'src/external-integrations/google_func/get-coordinate-by-address.api';
-import { Store } from './entities/store.entity';
+import { TypeOrmStoreRepository } from '../repositories/type-orm/type-orm-store.repository';
+import { CreateStoreDto } from '../dto/create-store.dto';
+import { Store } from '../entities/store.entity';
 import logger from 'src/config/logger.config';
-import { UpdateStoreDto } from './dto/update-store.dto';
-import { Address, PartialAddress, PinMaps } from './types/address.interface';
-import { PostalCodeInvalidError } from './errors/postal-code-invalid.error';
-import { Store2, StoresResponses2 } from './types/stores-responses.interface';
-import { calculateDistance } from 'src/external-integrations/google_func/calculate-distance.api';
+import { UpdateStoreDto } from '../dto/update-store.dto';
+import { Address, PartialAddress, PinMaps } from '../types/address.interface';
+import { PostalCodeInvalidError } from '../../common/errors/postal-code-invalid.error';
+import { Store2, StoresResponses2 } from '../types/stores-responses.interface';
 import { CorreiosService } from 'src/external-integrations/correios/correios.service';
+import { GoogleService } from 'src/external-integrations/google/google.service';
+import { ViacepService } from 'src/external-integrations/viacep/viacep.service';
 
 @Injectable()
 export class StoresService {
   constructor(
     private readonly storeRepo: TypeOrmStoreRepository,
     private readonly correiosService: CorreiosService,
+    private readonly googleService: GoogleService,
+    private readonly viacepService: ViacepService,
   ) {}
 
   async getAllStores(limit: number, offset: number) {
@@ -97,13 +98,14 @@ export class StoresService {
 
       const storesWithDeliveryOptions = await Promise.all(
         stores.stores.map(async (store) => {
-          const { distance, duration } = await calculateDistance(
-            { latitude: store.latitude, longitude: store.longitude },
-            {
-              latitude: clientAddress.latitude,
-              longitude: clientAddress.longitude,
-            },
-          );
+          const { distance, duration } =
+            await this.googleService.calculateDistance(
+              { latitude: store.latitude, longitude: store.longitude },
+              {
+                latitude: clientAddress.latitude,
+                longitude: clientAddress.longitude,
+              },
+            );
 
           const deliveryOptions = await this.deliveryOptions(
             store,
@@ -218,8 +220,9 @@ export class StoresService {
   ): Promise<Address> {
     try {
       const partialAddress: PartialAddress =
-        await getAdressByPostalCode(postalCode);
-      const address: Address = await getCoordinateByAddress(partialAddress);
+        await this.viacepService.getAdressByPostalCode(postalCode);
+      const address: Address =
+        await this.googleService.getCoordinateByAddress(partialAddress);
       if (!address.latitude || !address.longitude) {
         throw new InternalServerErrorException('Failed to fetch coordinates.');
       }
