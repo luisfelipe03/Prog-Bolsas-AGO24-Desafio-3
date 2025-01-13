@@ -1,99 +1,120 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+Aqui está uma versão revisada e melhorada do seu README, com emojis para torná-lo mais atrativo, mas mantendo o profissionalismo:
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+---
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+# 🏬 Physical Store - API Backend
 
-## Description
+Bem-vindo ao repositório da **Physical Store**, uma API backend desenvolvida com **Nest.js** e **TypeScript**. Este projeto tem como objetivo oferecer funcionalidades robustas para cálculos de distância, frete, e gerenciamento de lojas físicas, com integração a APIs externas e armazenamento em **PostgreSQL**. 🚀
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## ✨ Funcionalidades
 
-```bash
-$ yarn install
+1. **📍 Cálculo de Distâncias e Fretes**:
+   - Integração com as APIs **ViaCEP**, **Google Maps**, e **Correios** para:
+     - Buscar endereços por CEP.
+     - Calcular distâncias entre lojas e endereços de clientes.
+     - Determinar preços e prazos de frete (PAC, SEDEX, MotoBoy e Retirada).
+   - Regras de frete:
+     - Distâncias menores que 50 km: frete mínimo de **R$ 15,00**.
+     - Distâncias maiores: calculadas com base nos preços dos serviços PAC/SEDEX.
+
+2. **🛒 Gerenciamento de Lojas**:
+   - **CRUD Completo**:
+     - Criar, listar, atualizar e deletar lojas armazenadas no banco de dados.
+   - Retorno de lojas próximas a um CEP informado.
+
+3. **📄 Respostas em JSON**:
+   - Informações claras e detalhadas sobre lojas, distâncias, fretes e prazos.
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+- **Node.js** e **Nest.js**: Backend escalável e modular.
+- **TypeScript**: Código tipado para maior segurança.
+- **PostgreSQL** com **TypeORM**: Persistência de dados.
+- **Axios**: Integração com APIs externas.
+- **Dotenv**: Configuração de variáveis de ambiente.
+- **Class-validator**: Validação robusta de dados.
+
+---
+
+## 📂 Estrutura do Projeto
+
+```plaintext
+src/
+├── common/                    # Recursos globais e reutilizáveis
+├── config/                    # Configuração da aplicação
+├── stores/                    # Módulo de lojas
+├── external-integrations/     # Integrações com APIs externas
+├── types/                     # Tipos e interfaces globais
+├── main.ts                    # Ponto de entrada principal
+└── app.module.ts              # Módulo raiz
 ```
 
-## Compile and run the project
+> Detalhes completos sobre os diretórios e arquivos principais podem ser encontrados no código fonte.
 
-```bash
-# development
-$ yarn run start
+---
 
-# watch mode
-$ yarn run start:dev
+## 🚀 Como Configurar o Projeto
 
-# production mode
-$ yarn run start:prod
-```
+1. **Clone o Repositório**:
 
-## Run tests
+   ```bash
+   git clone https://github.com/seu-usuario/physical-store.git
+   cd physical-store
+   ```
 
-```bash
-# unit tests
-$ yarn run test
+2. **Instale as Dependências**:
 
-# e2e tests
-$ yarn run test:e2e
+   ```bash
+   yarn install
+   ```
 
-# test coverage
-$ yarn run test:cov
-```
+3. **Configure as Variáveis de Ambiente**:
+   Crie um arquivo `.env` na raiz do projeto com o seguinte conteúdo:
 
-## Deployment
+   ```env
+   NODE_ENV=dev
+   PORT=3000
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_NAME=physical_store
+   DB_USER=postgres
+   DB_PASS=senha
+   GOOGLE_API_KEY=sua_chave_google_api
+   ```
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+4. **Inicie o Servidor**:
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+   ```bash
+   yarn run start:dev
+   ```
 
-```bash
-$ yarn install -g mau
-$ mau deploy
-```
+---
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 🧪 Testes
 
-## Resources
+- **Como testar**:
+  - Use ferramentas como **Postman** ou **Insomnia** para enviar requisições HTTP.
+  - Testes automatizados foram implementados para validar as funcionalidades principais.
 
-Check out a few resources that may come in handy when working with NestJS:
+- **Comando para executar os testes**:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+   ```bash
+   yarn run test
+   ```
 
-## Support
+---
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 🌐 Endpoints Disponíveis
 
-## Stay in touch
+- `GET /stores`: Lista todas as lojas.
+- `GET /stores/id/:id`: Detalhes de uma loja específica.
+- `GET /stores/:postalCode`: Lojas próximas a um CEP informado e cálculo de fretes.
+- `GET /stores/state/:uf`: Lojas de um estado específico.
+- `POST /stores`: Adiciona uma nova loja.
+- `PUT /stores/:id`: Atualiza uma loja.
+- `DELETE /stores/:id`: Remove uma loja.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
