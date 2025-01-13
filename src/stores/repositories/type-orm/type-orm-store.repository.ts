@@ -65,8 +65,8 @@ export class TypeOrmStoreRepository implements IStoreRepository {
 
   async findNearestStores(
     clientCoordinates: Coordinates,
-    limit = 10,
-    offset = 0,
+    limit: number,
+    offset: number,
   ): Promise<StoresResponses1> {
     const { latitude, longitude } = clientCoordinates;
 
@@ -88,11 +88,13 @@ export class TypeOrmStoreRepository implements IStoreRepository {
         distance: parseFloat(rawResult.raw[index].distance.toFixed(1)),
       })) as StoreWithDistance[];
 
+      const total = await this.storeRepo.count();
+
       return {
         stores,
         limit,
         offset,
-        total: stores.length,
+        total: total,
       };
     } catch (error) {
       this.handleRepositoryError('findNearestStores', error);

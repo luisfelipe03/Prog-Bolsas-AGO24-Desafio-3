@@ -122,6 +122,12 @@ export class StoresService {
       const addressWithCoordinates = await this.fetchAddressAndCoordinates(
         storeDto.postalCode,
       );
+
+      if (!addressWithCoordinates.address && !addressWithCoordinates.district) {
+        addressWithCoordinates.address = storeDto.address;
+        addressWithCoordinates.district = storeDto.district;
+      }
+
       const store = Store.create(storeDto, addressWithCoordinates);
       return await this.storeRepo.save(store);
     } catch (error) {
@@ -212,7 +218,9 @@ export class StoresService {
 
         return { ...store, distance, deliveryOptions };
       }),
-    );
+    ).then((results) => {
+      return results.sort((a, b) => a.distance - b.distance);
+    });
   }
 
   private formatStoreResponse(
