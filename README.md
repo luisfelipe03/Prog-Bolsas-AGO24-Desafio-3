@@ -1,7 +1,3 @@
-Aqui está uma versão revisada e melhorada do seu README, com emojis para torná-lo mais atrativo, mas mantendo o profissionalismo:
-
----
-
 # 🏬 Physical Store - API Backend
 
 Bem-vindo ao repositório da **Physical Store**, uma API backend desenvolvida com **Nest.js** e **TypeScript**. Este projeto tem como objetivo oferecer funcionalidades robustas para cálculos de distância, frete, e gerenciamento de lojas físicas, com integração a APIs externas e armazenamento em **PostgreSQL**. 🚀
