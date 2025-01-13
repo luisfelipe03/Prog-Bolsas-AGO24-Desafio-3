@@ -24,6 +24,13 @@ export class StoresService {
     private readonly viacepService: ViacepService,
   ) {}
 
+  private handleError(message: string, error: Error): never {
+    logger.error(`${message}: ${error.message}`);
+    throw error instanceof NotFoundException
+      ? error
+      : new InternalServerErrorException(message);
+  }
+
   async getAllStores(limit: number, offset: number) {
     try {
       const stores = await this.storeRepo.findAll(limit, offset);
@@ -34,11 +41,7 @@ export class StoresService {
 
       return stores;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      logger.error(`Error fetching all stores: ${error.message}`);
-      throw new InternalServerErrorException('Failed to fetch stores.');
+      this.handleError('Failed to fetch stores.', error);
     }
   }
 
@@ -52,13 +55,7 @@ export class StoresService {
 
       return stores;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      logger.error(`Error fetching stores by state: ${error.message}`);
-      throw new InternalServerErrorException(
-        'Failed to fetch stores by state.',
-      );
+      this.handleError('Failed to fetch stores by state.', error);
     }
   }
 
@@ -70,10 +67,7 @@ export class StoresService {
       }
       return store;
     } catch (error) {
-      logger.error(`Error fetching store by ID: ${error.message}`);
-      throw error instanceof NotFoundException
-        ? error
-        : new InternalServerErrorException('Failed to fetch store.');
+      this.handleError('Failed to fetch store by ID.', error);
     }
   }
 
@@ -96,48 +90,19 @@ export class StoresService {
         throw new NotFoundException('No nearby stores found.');
       }
 
-      const storesWithDeliveryOptions = await Promise.all(
-        stores.stores.map(async (store) => {
-          const { distance, duration } =
-            await this.googleService.calculateDistance(
-              { latitude: store.latitude, longitude: store.longitude },
-              {
-                latitude: clientAddress.latitude,
-                longitude: clientAddress.longitude,
-              },
-            );
-
-          const deliveryOptions = await this.deliveryOptions(
-            store,
-            distance,
-            duration,
-            clientPostalCode,
-          );
-
-          return { ...store, distance, deliveryOptions };
-        }),
+      const storesWithDeliveryOptions = await this.addDeliveryOptions(
+        stores.stores,
+        clientAddress,
+        clientPostalCode,
       );
 
       const pins: PinMaps[] = stores.stores.map((store) => ({
-        position: {
-          lat: Number(store.latitude),
-          lng: Number(store.longitude),
-        },
+        position: { lat: Number(store.latitude), lng: Number(store.longitude) },
         title: store.storeName,
       }));
 
-      const storesResponse: Store2[] = storesWithDeliveryOptions.map(
-        (store) => {
-          const storeR = {
-            name: store.storeName,
-            city: store.city,
-            postalCode: store.postalCode,
-            type: store.type,
-            distance: `${store.distance.toFixed(1)} km`,
-            value: store.deliveryOptions,
-          };
-          return storeR;
-        },
+      const storesResponse: Store2[] = storesWithDeliveryOptions.map((store) =>
+        this.formatStoreResponse(store, store.distance, store.deliveryOptions),
       );
 
       return {
@@ -148,11 +113,7 @@ export class StoresService {
         total: stores.total,
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      logger.error(`Error fetching nearest stores: ${error.message}`);
-      throw new InternalServerErrorException('Failed to fetch nearest stores.');
+      this.handleError('Failed to fetch nearest stores.', error);
     }
   }
 
@@ -164,8 +125,7 @@ export class StoresService {
       const store = Store.create(storeDto, addressWithCoordinates);
       return await this.storeRepo.save(store);
     } catch (error) {
-      logger.error(`Error creating store: ${error.message}`);
-      throw new InternalServerErrorException('Failed to create store.');
+      this.handleError('Failed to create store.', error);
     }
   }
 
@@ -183,20 +143,13 @@ export class StoresService {
         const addressWithCoordinates = await this.fetchAddressAndCoordinates(
           storeDto.postalCode,
         );
-        storeDto.address = addressWithCoordinates.address;
-        storeDto.district = addressWithCoordinates.district;
-        storeDto.city = addressWithCoordinates.city;
-        storeToUpdate.latitude = addressWithCoordinates.latitude;
-        storeToUpdate.longitude = addressWithCoordinates.longitude;
+        storeDto = { ...storeDto, ...addressWithCoordinates };
       }
 
       Object.assign(storeToUpdate, storeDto);
       return await this.storeRepo.save(storeToUpdate);
     } catch (error) {
-      logger.error(`Error updating store: ${error.message}`);
-      throw error instanceof NotFoundException
-        ? error
-        : new InternalServerErrorException('Failed to update store.');
+      this.handleError('Failed to update store.', error);
     }
   }
 
@@ -208,12 +161,11 @@ export class StoresService {
       }
       await this.storeRepo.delete(id);
     } catch (error) {
-      logger.error(`Error fetching store by ID: ${error.message}`);
-      throw error instanceof NotFoundException
-        ? error
-        : new InternalServerErrorException('Failed to fetch store.');
+      this.handleError('Failed to delete store.', error);
     }
   }
+
+  // Métodos privados reutilizáveis
 
   private async fetchAddressAndCoordinates(
     postalCode: string,
@@ -230,15 +182,52 @@ export class StoresService {
     } catch (error) {
       if (error instanceof PostalCodeInvalidError) {
         throw error;
-      } else {
-        logger.error(
-          `Error fetching address and coordinates: ${error.message}`,
-        );
-        throw new InternalServerErrorException(
-          'Failed to fetch address and coordinates.',
-        );
       }
+      this.handleError('Failed to fetch address and coordinates.', error);
     }
+  }
+
+  private async addDeliveryOptions(
+    stores: Store[],
+    clientAddress: Address,
+    clientPostalCode: string,
+  ) {
+    return Promise.all(
+      stores.map(async (store) => {
+        const { distance, duration } =
+          await this.googleService.calculateDistance(
+            { latitude: store.latitude, longitude: store.longitude },
+            {
+              latitude: clientAddress.latitude,
+              longitude: clientAddress.longitude,
+            },
+          );
+
+        const deliveryOptions = await this.deliveryOptions(
+          store,
+          distance,
+          duration,
+          clientPostalCode,
+        );
+
+        return { ...store, distance, deliveryOptions };
+      }),
+    );
+  }
+
+  private formatStoreResponse(
+    store: Store,
+    distance: number,
+    deliveryOptions: any,
+  ) {
+    return {
+      name: store.storeName,
+      city: store.city,
+      postalCode: store.postalCode,
+      type: store.type,
+      distance: `${distance.toFixed(1)} km`,
+      value: deliveryOptions,
+    };
   }
 
   private async deliveryOptions(
@@ -251,34 +240,61 @@ export class StoresService {
 
     if (store.type === 'PDV' && distance <= 50) {
       deliveryOptions.push({
-        prazo: duration.toFixed(0) + ' minutos',
+        prazo: this.prazoMotoboy(duration),
         price: this.calculatePrice(distance),
         description: 'Motoboy',
       });
-    } else if (store.type === 'LOJA') {
+      deliveryOptions.push({
+        prazo: '1 dia útil',
+        price: 'Grátis',
+        description: 'Retirada na loja',
+      });
+    }
+
+    if (store.type === 'LOJA') {
       if (distance <= 50) {
         deliveryOptions.push({
-          prazo: duration.toFixed(0) + ' minutos',
+          prazo: this.prazoMotoboy(duration),
           price: this.calculatePrice(distance),
           description: 'Motoboy',
         });
+        deliveryOptions.push({
+          prazo: '1 dia útil',
+          price: 'Grátis',
+          description: 'Retirada na loja',
+        });
       }
+
       const correiosOptions = await this.correiosService.fetchFreightPrice(
         clientPostalCode,
         store.postalCode,
       );
-      correiosOptions.forEach((option) => {
-        deliveryOptions.push({
+
+      deliveryOptions.push(
+        ...correiosOptions.map((option) => ({
           prazo: option.prazo,
           price: option.price,
           description: option.description,
-        });
-      });
+        })),
+      );
     }
+
     return deliveryOptions;
   }
 
-  private calculatePrice(distance: number) {
-    return `R$ ${(15 + distance * 0.5).toFixed(2)}`;
+  private prazoMotoboy(duration: number): string {
+    const prazoMinimum = 15;
+    const prazo = prazoMinimum + duration;
+    const resto = prazo % 5;
+    const prazoArredondado = prazo + (5 - (resto % 5));
+    return `${prazoArredondado} minutos`;
+  }
+
+  private calculatePrice(distance: number): string {
+    const price = 15 + distance * 0.25;
+    const priceInCents = price * 100;
+    const remainder = priceInCents % 50;
+    const roundedPriceInCents = priceInCents + (50 - remainder);
+    return `R$${(roundedPriceInCents / 100).toFixed(2)}`;
   }
 }
