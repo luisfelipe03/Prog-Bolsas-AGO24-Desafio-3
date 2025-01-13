@@ -17,6 +17,29 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nest_app
+    restart: always
+    environment:
+      NODE_ENV: prod
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: physical_store
+      DB_USER: postgres
+      DB_PASS: Info@1234
+      GOOGLE_API_KEY: AIzaSyDtf6bQuIOjc7FyL7Po7FE2theHV-3SJj0
+    ports:
+      - '3000:3000'
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    command: ["yarn", "start:prod"]
+
 volumes:
   db_data:
     driver: local
