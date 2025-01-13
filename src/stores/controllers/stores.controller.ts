@@ -9,9 +9,6 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { StoresService } from './stores.service';
-import { CreateStoreDto } from './dto/create-store.dto';
-import { UpdateStoreDto } from './dto/update-store.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -19,6 +16,9 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
+import { StoresService } from '../services/stores.service';
+import { CreateStoreDto } from '../dto/create-store.dto';
+import { UpdateStoreDto } from '../dto/update-store.dto';
 
 @ApiTags('Stores')
 @Controller('stores')
